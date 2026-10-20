@@ -143,7 +143,7 @@ Se algo nesta especificação estiver errado ou for uma má ideia técnica, diga
 ## 9. Decisões tomadas na revisão da spec (2026-10-19)
 
 1. **Pintura:** `configuracoes` ganha `pintura_insumos_peca` (R$ por peça, `numeric(12,2)`, padrão 0) e `pintura_min_peca` (padrão 0). São preenchidos no orçamento, ajustáveis, e congelados em `parametros`. O insumo "Tinta" pode ser usado como linha de insumo **ou** embutido em `pintura_insumos_peca`, nunca nos dois (a tela avisa).
-2. **Extras avulsos:** campo único `extras_avulsos` (R$ por pedido) no orçamento, congelado em `parametros`.
+2. **Extras avulsos:** campo único `extras_peca` (R$ **por peça**, como no protótipo `Ideia.html`), congelado em `parametros`.
 3. **Seu R$/hora:** horas trabalhadas = `(preparo_min + acabamento_min_peca × qtd + (pintado ? pintura_min_peca × qtd : 0)) / 60`. Sem horas de impressão. Numerador: mão de obra + mão de obra da pintura + lucro (o tempo de pintura está no denominador, então o valor dele também entra no numerador).
 4. **Seed:** `configuracoes` criada por trigger em `auth.users`; dados iniciais (K1C, PLA, ABS, Tinta) criados por action de primeiro acesso, não por `seed.sql`.
 5. **insumos.qtd_embalagem** é nullable; insumo sem quantidade não pode entrar em orçamento.
@@ -153,9 +153,10 @@ Se algo nesta especificação estiver errado ou for uma má ideia técnica, diga
 9. **Next.js 16:** renovação de sessão em `proxy.ts` (antigo `middleware.ts`).
 10. **Docker/Coolify:** `NEXT_PUBLIC_*` entram como `ARG` de build; no Coolify, marcar como build variable.
 11. **Agentes e skills:** definidos em `.claude/agents/` (database-architect, test-engineer, security-auditor, code-reviewer) e `.claude/skills/fechar-fase/` (checklist de fim de fase). Mapa do código com o skill **cartographer** ao fim de cada fase.
-12. **`parametros` é a fonte do recálculo:** guarda todas as entradas em precisão total, inclusive `extras_avulsos`, `pintura_insumos_peca` e `pintura_min_peca`, que não têm coluna própria. As colunas de descrição do orçamento servem para listar e filtrar. "Atualizar" um orçamento recalcula a partir das entradas do formulário, nunca das colunas arredondadas.
+12. **`parametros` é a fonte do recálculo:** guarda todas as entradas em precisão total, inclusive `extras_peca`, `pintura_insumos_peca` e `pintura_min_peca`, que não têm coluna própria. As colunas de descrição do orçamento servem para listar e filtrar. "Atualizar" um orçamento recalcula a partir das entradas do formulário, nunca das colunas arredondadas.
 13. **`configuracoes` protegida:** o usuário só faz `update` nas colunas de parâmetros. Insert e delete não são permitidos (a linha nasce pelo trigger), e `dados_iniciais_criados` não pode ser alterado. `criar_dados_iniciais()` é `security definer` e grava `user_id = auth.uid()`.
 14. **Tipos:** `lib/database.types.ts` é gerado (`npm run db:types`); valores de domínio (`TIPOS_FILAMENTO`, `UNIDADES_INSUMO`, `BASES_INSUMO`, `STATUS_ORCAMENTO`) ficam em `lib/dominio.ts`.
 15. **Testes de banco:** `tests/db/` aplica as migrações num Postgres 17 em memória (PGlite) com um stub do schema `auth` e testa RLS com dois usuários.
-16. **Margem real** = lucro ÷ custo total (markup), comparável à margem configurada. Só difere dela quando há taxa de pagamento, retorno ou pedido mínimo.
+16. **Margem real** = lucro ÷ preço (como no protótipo): quanto do que o cliente paga fica com você. A margem configurada é sobre o custo (markup), então os dois números são diferentes (caso A: 80% configurado → 44% real).
 17. **Números digitados:** vírgula é decimal; ponto em grupos de 3 ("1.000", "3.200") é milhar; demais pontos são decimais. Casas decimais acima do que a coluna guarda são recusadas, não arredondadas.
+18. **Protótipo `Ideia.html`** é a referência visual e de comportamento: identidade (Archivo + IBM Plex Mono, paleta verde-petróleo, modo escuro), excluir com dois toques, filamento genérico e impressora manual no orçamento.

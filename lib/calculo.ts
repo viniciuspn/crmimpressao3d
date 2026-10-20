@@ -33,7 +33,8 @@ export type EntradaCalculo = {
   acabamento_min_peca: number;
   // Insumos do pedido
   insumos: LinhaInsumo[];
-  extras_avulsos: number;
+  /** Outros extras avulsos, em R$ por peça (como no protótipo). */
+  extras_peca: number;
   embalagem_pedido: number;
   // Pintura
   pintado: boolean;
@@ -76,7 +77,7 @@ export type ResultadoCalculo = {
   preco: number;
   preco_por_peca: number;
   lucro: number;
-  /** lucro ÷ custo, comparável à margem configurada (markup); null se o custo for 0. */
+  /** lucro ÷ preço (quanto do que o cliente paga fica com você); null se o preço for 0. */
   margem_real: number | null;
   /** Minutos de preparo, acabamento e pintura, em horas. Sem horas de impressão. */
   horas_trabalhadas: number;
@@ -132,7 +133,7 @@ export function calcular(e: EntradaCalculo): ResultadoCalculo {
       (soma, l) => soma + l.custo_unitario * l.quantidade * (l.base === "peca" ? e.quantidade : 1),
       0,
     ) +
-    e.extras_avulsos +
+    e.extras_peca * e.quantidade +
     e.embalagem_pedido;
 
   const pintura_insumos = e.pintado ? e.pintura_insumos_peca * e.quantidade : 0;
@@ -169,7 +170,7 @@ export function calcular(e: EntradaCalculo): ResultadoCalculo {
     preco,
     preco_por_peca: preco / e.quantidade,
     lucro,
-    margem_real: custo_total > 0 ? lucro / custo_total : null,
+    margem_real: preco > 0 ? lucro / preco : null,
     horas_trabalhadas,
     valor_hora_real:
       horas_trabalhadas > 0 ? (mao_de_obra + pintura_mao_de_obra + lucro) / horas_trabalhadas : null,

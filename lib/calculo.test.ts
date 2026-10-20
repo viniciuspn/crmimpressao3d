@@ -26,7 +26,7 @@ const CASO_A: EntradaCalculo = {
   preparo_min: 20,
   acabamento_min_peca: 5,
   insumos: [],
-  extras_avulsos: 0,
+  extras_peca: 0,
   embalagem_pedido: 3,
   pintado: false,
   pintura_insumos_peca: 0,
@@ -121,14 +121,14 @@ describe("regras", () => {
         { custo_unitario: 0.5, quantidade: 2, base: "peca" }, // 0,5 × 2 × 3 = 3
         { custo_unitario: 1.25, quantidade: 4, base: "pedido" }, // 1,25 × 4 = 5
       ],
-      extras_avulsos: 2,
+      extras_peca: 2, // 2 × 3 peças = 6
     });
-    expect(r.componentes.insumos - base).toBeCloseTo(3 + 5 + 2, 10);
+    expect(r.componentes.insumos - base).toBeCloseTo(3 + 5 + 6, 10);
   });
 
   it("falha incide só sobre material, energia, depreciação e manutenção", () => {
     const sem = calcular(CASO_A);
-    const com = calcular({ ...CASO_A, extras_avulsos: 100 });
+    const com = calcular({ ...CASO_A, extras_peca: 100 });
     expect(com.componentes.falhas).toBe(sem.componentes.falhas);
   });
 
@@ -166,7 +166,7 @@ describe("regras", () => {
   it("preço por peça, margem real e seu R$/hora", () => {
     const r = calcular(CASO_B);
     expect(r.preco_por_peca).toBeCloseTo(r.preco / 3, 10);
-    expect(r.margem_real).toBeCloseTo(r.lucro / r.custo_total, 10);
+    expect(r.margem_real).toBeCloseTo(r.lucro / r.preco, 10);
     // horas trabalhadas: (20 + 5×3 + 15×3) / 60 = 80 min
     expect(r.horas_trabalhadas).toBeCloseTo(80 / 60, 10);
     // mão de obra 23,33 + pintura (mão de obra) 30 + lucro
@@ -182,9 +182,9 @@ describe("regras", () => {
     expect(calcular({ ...CASO_A, preparo_min: 40 }).avisos.mao_de_obra_alta).toBe(true); // 36,67
   });
 
-  it("margem real é igual à configurada sem taxa nem pedido mínimo", () => {
-    expect(calcular(CASO_A).margem_real).toBeCloseTo(0.8, 10);
-    expect(calcular(CASO_B).margem_real).toBeLessThan(1); // retorno + taxa mudam a conta
+  it("margem real é lucro ÷ preço (caso A: 37,05 / 83,37 ≈ 44%)", () => {
+    expect(calcular(CASO_A).margem_real).toBeCloseTo(0.8 / 1.8, 10);
+    expect(calcular({ ...CASO_A, pedido_minimo: 0, margem_pct: 0, preparo_min: 0, acabamento_min_peca: 0 }).margem_real).toBeCloseTo(0, 10);
   });
 
   it("rejeita NaN, infinito e negativos (campos vazios no cálculo ao vivo)", () => {
