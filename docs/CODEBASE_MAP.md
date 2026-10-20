@@ -1,13 +1,13 @@
 ---
-last_mapped: 2026-10-20T01:59:05Z
-total_files: 48
-total_tokens: 19000
-phase: 2
+last_mapped: 2026-10-20T02:53:14Z
+total_files: 70
+total_tokens: 52000
+phase: 4
 ---
 
 # Mapa do código
 
-> Gerado pelo Cartographer. Último mapeamento: 2026-10-20T01:59:05Z (fim da fase 2, Banco).
+> Gerado pelo Cartographer. Último mapeamento: 2026-10-20T02:53:14Z (fim da fase 4, Cadastros e configurações).
 
 **Ideia** (crmimpressao3d) é um sistema de orçamentos e clientes para uma oficina de impressão 3D, usado por uma só pessoa. A especificação completa está em [prompt-ideia.md](../prompt-ideia.md). A seção 9 dela registra as decisões tomadas depois da revisão.
 
@@ -51,6 +51,10 @@ tests/db/
   supabase-stub.ts        PGlite + stub de auth (auth.uid, anon, authenticated, supabase_auth_admin)
   migracoes.test.ts       RLS entre 2 usuários, FKs, triggers, permissões de configuracoes
 lib/
+  calculo.ts              regra de preço (função pura) + precoPorKg, custoPorUnidade, arredondar2
+  cadastros.ts            schemas Zod + campos de filamentos, impressoras, insumos e configurações
+  form.ts                 EstadoAcao, helpers Zod que leem FormData (decimal, inteiro, checkbox…), lerFormulario
+  formato.ts              formatarBRL, paraNumero (vírgula decimal, ponto de milhar)
   database.types.ts       tipos do banco (PROVISÓRIO, escrito à mão; regenerar com npm run db:types)
   dominio.ts              listas de domínio (tipos de filamento, unidades, bases, status)
   env.ts                  URL e chave do Supabase (NEXT_PUBLIC_*, embutidas no build)
@@ -61,14 +65,20 @@ app/
   layout.tsx              raiz: pt-BR, fonte Geist, metadata e viewport
   login/                  página, formulário (useActionState) e actions entrar/sair
   (app)/layout.tsx        casca autenticada: Nav, cabeçalho com Sair, main
-  (app)/*/page.tsx        páginas provisórias (EmBreve) até as fases 4 a 6
+  (app)/cadastros/        abas filamentos/impressoras/insumos (?aba=), edição inline, actions salvar/excluir
+  (app)/configuracoes/    parâmetros da oficina (update só nas colunas permitidas)
+  (app)/*/page.tsx        demais páginas provisórias (EmBreve) até as fases 5 e 6
   api/health/route.ts     GET → {status:"ok"}
 components/
+  formulario.tsx          formulário genérico (campos descritos em lib/cadastros.ts), useActionState via onSubmit
+  botao-excluir.tsx       excluir em dois toques
   nav.tsx                 barra lateral (md+) e barra inferior (celular), 5 itens
   em-breve.tsx            aviso "Em construção (fase N)"
 .claude/
   agents/                 database-architect, test-engineer, security-auditor, code-reviewer
   skills/fechar-fase/     checklist de fim de fase
+e2e/                      Playwright (viewport de celular) contra o Supabase real; limpeza.teardown apaga "E2E %"
+Ideia.html                protótipo: referência visual e de comportamento
 docs/CODEBASE_MAP.md      este arquivo
 ```
 
@@ -99,6 +109,14 @@ docs/CODEBASE_MAP.md      este arquivo
 Todas as tabelas têm RLS com 4 políticas `(select auth.uid()) = user_id` para `authenticated` (configuracoes tem só select/update), índice em `user_id` e trigger de `updated_at`.
 
 `public.criar_dados_iniciais()` (security definer, só `authenticated`) cria K1C, PLA, ABS e Tinta uma única vez, marcando `configuracoes.dados_iniciais_criados`. É chamada em `entrar` logo depois do login.
+
+### Cálculo
+
+[lib/calculo.ts](../lib/calculo.ts): `calcular(EntradaCalculo)` segue a seção 3 da spec. Recebe percentuais em pontos (5 = 5%) e extras **por peça**. Retorna os componentes em precisão total, `margem_real` = lucro ÷ preço, `valor_hora_real` e os avisos. Lança `RangeError` para NaN, valores negativos ou taxa ≥ 100.
+
+### Formulários e cadastros
+
+O padrão é: `lib/cadastros.ts` define o schema Zod e o `GrupoCampos[]`; a página passa a Server Action com `bind(null, id)` para `<Formulario>`; a action chama `requireUser()`, depois `lerFormulario(schema, fd)`, depois o Supabase com `.select("id")` (0 linhas = não encontrado) e por fim `revalidatePath`. Excluir: filamento e impressora tentam `delete` e, se der 23503, desativam; insumo confere o uso antes.
 
 ### Casca da interface
 
@@ -144,6 +162,11 @@ sequenceDiagram
 
 ## Pegadinhas
 
+- **Formulários usam `onSubmit` + `startTransition(() => formAction(fd))`, não `action={}`**: com `action`, o React 19 limpa o formulário mesmo quando a action devolve erro.
+- **Cores só por token** (`bg-panel`, `text-muted`, `border-line`, `text-accent`, `bg-soft`, `text-danger`, `c1`–`c8`), definidos em `app/globals.css` com modo escuro. Não use `zinc`, `teal` etc.
+- Se o CSS do `npm run dev` parecer antigo depois de mexer no `globals.css`, reinicie o dev e apague `.next/dev`.
+- Os testes E2E alteram o banco real (só registros `E2E …`, apagados no teardown; a margem das configurações é restaurada).
+
 - **Next 16 ≠ Next 15**: leia `node_modules/next/dist/docs/` antes de usar uma API nova (ver [AGENTS.md](../AGENTS.md)). O `cacheComponents` está **desligado** de propósito; o `partialPrefetching` exige ele, então também está fora.
 - **`NEXT_PUBLIC_*` são fixadas no build.** Mudar a variável no container sem refazer o build não muda o bundle do cliente. O `lib/env.ts` não valida nada: se a variável faltar, o erro só aparece na primeira chamada ao Supabase.
 - **Layouts não re-renderizam** na navegação pelo cliente. O `requireUser()` do layout não substitui a checagem em cada página nem em cada Server Action com dados (fase 2 em diante).
@@ -170,4 +193,5 @@ sequenceDiagram
 | Variável de ambiente nova | `lib/env.ts`, `.env.example`, `Dockerfile` (ARG se for `NEXT_PUBLIC_*`), README |
 | Mudar o schema | nova migração em `supabase/migrations/` (nunca editar uma já aplicada), teste em `tests/db/`, `npm run db:push` e `npm run db:types` |
 | Novo valor de domínio | CHECK na migração + `lib/dominio.ts` |
-| Cálculo (fase 3) | `lib/calculo.ts` + testes Vitest |
+| Novo cadastro/formulário | schema + campos em `lib/cadastros.ts`, action com `lerFormulario`, `<Formulario>` na página, teste em `lib/cadastros.test.ts` e E2E |
+| Mudar o cálculo | `lib/calculo.ts` + `lib/calculo.test.ts` (os casos A, B e C não podem mudar) |
