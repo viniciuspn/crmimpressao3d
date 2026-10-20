@@ -79,8 +79,10 @@ type StatusOrcamento = "enviado" | "aprovado" | "recusado" | "entregue";
 
 type OrcamentosRow = Base & {
   cliente_id: string | null;
-  filamento_id: string;
-  impressora_id: string;
+  filamento_id: string | null;
+  impressora_id: string | null;
+  material: string;
+  impressora_nome: string;
   peca: string;
   quantidade: number;
   pecas_por_mesa: number;
@@ -137,6 +139,10 @@ export type Database = {
         ParaInsert<
           OrcamentosRow,
           | "cliente_id"
+          | "filamento_id"
+          | "impressora_id"
+          | "material"
+          | "impressora_nome"
           | "pintado"
           | "status"
           | "status_alterado_em"
@@ -163,6 +169,7 @@ export type Database = {
     Views: { [_ in never]: never };
     Functions: {
       criar_dados_iniciais: { Args: never; Returns: boolean };
+      salvar_orcamento: { Args: { p_id?: string; p_dados: Json; p_insumos: Json }; Returns: string };
     };
     Enums: { status_orcamento: StatusOrcamento };
     CompositeTypes: { [_ in never]: never };
