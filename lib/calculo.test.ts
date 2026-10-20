@@ -140,8 +140,8 @@ describe("regras", () => {
   });
 
   it("retorno não recebe margem e não entra no custo", () => {
-    const sem = calcular({ ...CASO_A, margem_pct: 0 });
-    const com = calcular({ ...CASO_A, margem_pct: 0, retorno_ativo: true });
+    const sem = calcular({ ...CASO_A, pedido_minimo: 0 });
+    const com = calcular({ ...CASO_A, pedido_minimo: 0, retorno_ativo: true });
     expect(com.custo_total).toBe(sem.custo_total);
     expect(com.preco - sem.preco).toBeCloseTo(com.retorno, 10);
   });
@@ -166,7 +166,7 @@ describe("regras", () => {
   it("preço por peça, margem real e seu R$/hora", () => {
     const r = calcular(CASO_B);
     expect(r.preco_por_peca).toBeCloseTo(r.preco / 3, 10);
-    expect(r.margem_real).toBeCloseTo(r.lucro / r.preco, 10);
+    expect(r.margem_real).toBeCloseTo(r.lucro / r.custo_total, 10);
     // horas trabalhadas: (20 + 5×3 + 15×3) / 60 = 80 min
     expect(r.horas_trabalhadas).toBeCloseTo(80 / 60, 10);
     // mão de obra 23,33 + pintura (mão de obra) 30 + lucro
@@ -180,6 +180,20 @@ describe("regras", () => {
   it("avisa quando a mão de obra passa de 3× o filamento", () => {
     expect(calcular(CASO_A).avisos.mao_de_obra_alta).toBe(false); // 23,33 < 33,26
     expect(calcular({ ...CASO_A, preparo_min: 40 }).avisos.mao_de_obra_alta).toBe(true); // 36,67
+  });
+
+  it("margem real é igual à configurada sem taxa nem pedido mínimo", () => {
+    expect(calcular(CASO_A).margem_real).toBeCloseTo(0.8, 10);
+    expect(calcular(CASO_B).margem_real).toBeLessThan(1); // retorno + taxa mudam a conta
+  });
+
+  it("rejeita NaN, infinito e negativos (campos vazios no cálculo ao vivo)", () => {
+    expect(() => calcular({ ...CASO_A, gramas_por_mesa: Number.NaN })).toThrow(RangeError);
+    expect(() => calcular({ ...CASO_A, preco_kg: Number.POSITIVE_INFINITY })).toThrow(RangeError);
+    expect(() => calcular({ ...CASO_A, margem_pct: -1 })).toThrow(RangeError);
+    expect(() =>
+      calcular({ ...CASO_A, insumos: [{ custo_unitario: Number.NaN, quantidade: 1, base: "peca" }] }),
+    ).toThrow(RangeError);
   });
 
   it("rejeita entradas que quebram a fórmula", () => {
@@ -217,5 +231,6 @@ describe("auxiliares", () => {
     expect(arredondar2(0.1 + 0.2)).toBe(0.3);
     expect(arredondar2(83.37)).toBe(83.37);
     expect(arredondar2(1e-7)).toBe(0);
+    expect(Object.is(arredondar2(-0.004), 0)).toBe(true); // sem "-R$ 0,00"
   });
 });

@@ -76,8 +76,8 @@ export type ResultadoCalculo = {
   preco: number;
   preco_por_peca: number;
   lucro: number;
-  /** lucro ÷ preço (0 se preço = 0). */
-  margem_real: number;
+  /** lucro ÷ custo, comparável à margem configurada (markup); null se o custo for 0. */
+  margem_real: number | null;
   /** Minutos de preparo, acabamento e pintura, em horas. Sem horas de impressão. */
   horas_trabalhadas: number;
   /** (mão de obra + mão de obra da pintura + lucro) ÷ horas trabalhadas; null se não houver horas. */
@@ -91,6 +91,16 @@ export type ResultadoCalculo = {
 const pct = (valor: number) => valor / 100;
 
 export function calcular(e: EntradaCalculo): ResultadoCalculo {
+  for (const [campo, valor] of Object.entries(e)) {
+    if (typeof valor === "number" && (!Number.isFinite(valor) || valor < 0)) {
+      throw new RangeError(`${campo} deve ser um número ≥ 0`);
+    }
+  }
+  for (const l of e.insumos) {
+    if (!Number.isFinite(l.custo_unitario) || l.custo_unitario < 0 || !Number.isFinite(l.quantidade) || l.quantidade < 0) {
+      throw new RangeError("linha de insumo com custo ou quantidade inválidos");
+    }
+  }
   if (!Number.isInteger(e.quantidade) || e.quantidade < 1) {
     throw new RangeError("quantidade deve ser um inteiro ≥ 1");
   }
@@ -159,7 +169,7 @@ export function calcular(e: EntradaCalculo): ResultadoCalculo {
     preco,
     preco_por_peca: preco / e.quantidade,
     lucro,
-    margem_real: preco > 0 ? lucro / preco : 0,
+    margem_real: custo_total > 0 ? lucro / custo_total : null,
     horas_trabalhadas,
     valor_hora_real:
       horas_trabalhadas > 0 ? (mao_de_obra + pintura_mao_de_obra + lucro) / horas_trabalhadas : null,
@@ -186,5 +196,5 @@ export function custoPorUnidade(i: { preco_pago: number; qtd_embalagem: number |
  */
 export function arredondar2(valor: number) {
   const centavos = Math.round(Number((Math.abs(valor) * 100).toPrecision(15)));
-  return (valor < 0 ? -centavos : centavos) / 100;
+  return (valor < 0 && centavos !== 0 ? -centavos : centavos) / 100;
 }
