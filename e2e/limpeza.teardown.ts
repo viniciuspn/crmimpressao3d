@@ -15,6 +15,10 @@ teardown("apagar registros E2E", async () => {
   });
   if (error) throw error;
 
+  // Orçamentos primeiro: filamentos e impressoras usados neles não podem ser apagados.
+  const { error: eo } = await supabase.from("orcamentos").delete().like("peca", "E2E %");
+  if (eo) throw eo;
+
   for (const tabela of ["filamentos", "impressoras", "insumos"] as const) {
     const { error: e } = await supabase.from(tabela).delete().like("nome", "E2E %");
     if (e) throw e;
