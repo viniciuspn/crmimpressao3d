@@ -1,0 +1,834 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Ideia</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: tabbed workbench — Orçamento (inputs left, sticky quote ticket right), Filamentos and Impressoras (form left, list right); stacks on phone */
+:root{
+  --bg:#eef1f2; --panel:#ffffff; --ink:#15211f; --muted:#5d6b69; --line:#d5dcdb;
+  --accent:#0b7d78; --accent-ink:#ffffff; --soft:#e2efee; --danger:#b23a26; --ok:#2e7d32;
+  --c1:#0b7d78; --c2:#e0a100; --c3:#6b5bd2; --c4:#8a9a98; --c5:#d4573b; --c6:#2f8fd8; --c7:#4f6d3a; --c8:#b0479a;
+  --display:"Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body:"Archivo", "Helvetica Neue", Arial, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1514; --panel:#172120; --ink:#e3ecea; --muted:#94a5a2; --line:#2a3836;
+  --accent:#3cc4bc; --accent-ink:#06211f; --soft:#1d2e2c; --danger:#f08a72; --ok:#7bd88f;
+  --c1:#3cc4bc; --c2:#f0b929; --c3:#9a8cf0; --c4:#7e908d; --c5:#ef7a5f; --c6:#5aaeef; --c7:#8fb46f; --c8:#e07cc8;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1514; --panel:#172120; --ink:#e3ecea; --muted:#94a5a2; --line:#2a3836;
+  --accent:#3cc4bc; --accent-ink:#06211f; --soft:#1d2e2c; --danger:#f08a72; --ok:#7bd88f;
+  --c1:#3cc4bc; --c2:#f0b929; --c3:#9a8cf0; --c4:#7e908d; --c5:#ef7a5f; --c6:#5aaeef; --c7:#8fb46f; --c8:#e07cc8;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,4vw,36px);letter-spacing:-.02em;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;max-width:60ch}
+.tag{font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--line);padding:4px 8px;border-radius:4px}
+.tag.ok{color:var(--accent);border-color:var(--accent)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto}
+.tabs button.tab{background:transparent;color:var(--muted);border:0;border-bottom:2px solid transparent;border-radius:0;padding:10px 14px;font-weight:600;white-space:nowrap}
+.tabs button.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab .cnt{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:6px;font-weight:400}
+.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
+.grid.cad{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}
+@media (max-width:860px){.grid,.grid.cad{grid-template-columns:minmax(0,1fr)}}
+.panels{display:grid;gap:14px;min-width:0}
+fieldset{border:1px solid var(--line);background:var(--panel);border-radius:6px;margin:0;padding:14px 16px 16px;min-width:0}
+legend{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--muted);padding:0 6px}
+.row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+label{display:grid;gap:4px;font-size:13px;color:var(--muted);min-width:0}
+.in{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:4px;background:var(--bg);overflow:hidden}
+.in:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px var(--soft)}
+.in input,.in select{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font-family:var(--mono);font-size:15px;padding:8px 10px;outline:none}
+.in select,.in input[type=text]{font-family:var(--body)}
+.in input[type=color]{padding:3px;height:38px;cursor:pointer}
+.u{font-family:var(--mono);font-size:12px;color:var(--muted);padding:0 9px;display:flex;align-items:center;border-left:1px solid var(--line);white-space:nowrap}
+.pre{border-left:0;border-right:1px solid var(--line)}
+.hint{font-size:12px;color:var(--muted);margin:10px 0 0}
+.hint b{color:var(--ink);font-weight:500;font-family:var(--mono)}
+.ticket{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 16px);background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;min-width:0}
+@media (max-width:860px){.ticket{position:static}}
+.price{background:var(--accent);color:var(--accent-ink);padding:18px 18px 16px}
+.price small{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.85;font-weight:600}
+.big{font-family:var(--mono);font-weight:600;font-size:clamp(34px,5vw,44px);letter-spacing:-.02em;line-height:1.1;margin:4px 0 6px;font-variant-numeric:tabular-nums}
+.pp{font-family:var(--mono);font-size:14px;opacity:.92}
+.body{padding:16px 18px 18px;display:grid;gap:16px}
+.bar{display:flex;height:12px;border-radius:3px;overflow:hidden;background:var(--line)}
+.bar span{display:block;height:100%}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+td,th{padding:6px 0;border-bottom:1px dashed var(--line);font-size:14px;text-align:left}
+th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)}
+.bk td:last-child{text-align:right;font-family:var(--mono)}
+td .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:8px;vertical-align:0}
+td .pc{color:var(--muted);font-size:12px;margin-left:6px}
+tr.tot td{border-bottom:0;font-weight:600;padding-top:10px;border-top:1px solid var(--ink)}
+tr.ret td{color:var(--muted);border-bottom:0;font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.kpi{border:1px solid var(--line);border-radius:4px;padding:8px 10px;min-width:0}
+.kpi div{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.kpi b{font-family:var(--mono);font-size:15px;font-weight:600;display:block;margin-top:2px;overflow-wrap:anywhere}
+.warn{font-size:13px;padding:8px 10px;border-radius:4px;background:var(--soft);border-left:3px solid var(--c2)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-weight:600;font-size:14px;border-radius:4px;padding:9px 14px;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink)}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+button.mini{padding:4px 9px;font-size:12px;background:transparent;color:var(--ink);border-color:var(--line)}
+button.mini.del{color:var(--danger)}
+button.mini.del.armed{background:var(--danger);border-color:var(--danger);color:var(--panel)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+textarea{width:100%;min-height:150px;font-family:var(--mono);font-size:12.5px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);padding:10px;resize:vertical}
+.toast{font-size:13px;color:var(--accent);min-height:1em}
+.chk{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink);cursor:pointer}
+.chk input{width:18px;height:18px;margin:0;accent-color:var(--accent)}
+.mt{margin-top:12px}
+.off{opacity:.45}
+.list{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;min-width:0}
+.list h2{font-size:16px;margin:0 0 8px;font-weight:600}
+.tw{overflow-x:auto}
+.list td{padding:9px 8px 9px 0;vertical-align:middle}
+.list td.n{font-family:var(--mono);white-space:nowrap}
+.list td.act{text-align:right;white-space:nowrap}
+.list td.act button+button{margin-left:6px}
+.sw{width:14px;height:14px;border-radius:50%;border:1px solid var(--line);display:inline-block;vertical-align:-2px;margin-right:8px}
+.meta{display:block;font-size:12px;color:var(--muted)}
+.empty{color:var(--muted);font-size:14px;padding:16px 0}
+.formbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;align-items:center}
+.fmsg{font-size:13px;color:var(--muted)}
+.ilines{display:grid;gap:6px;margin-top:12px}
+.iline{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:8px 10px;border:1px solid var(--line);border-radius:4px;background:var(--bg);font-size:14px}
+.iline .nm{flex:1 1 160px;min-width:0}
+.iline .v{font-family:var(--mono);white-space:nowrap}
+.addrow{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1.2fr) auto;gap:10px;align-items:end}
+@media (max-width:560px){.addrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.lnk{color:var(--accent);font-size:12px;font-weight:600;text-decoration:none}
+.lnk:hover{text-decoration:underline}
+.search{margin-bottom:6px}
+.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:14px}
+@media (max-width:640px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.4fr);gap:10px;margin-bottom:14px}
+@media (max-width:640px){.filters{grid-template-columns:minmax(0,1fr)}}
+select.st{font:inherit;font-size:12px;font-weight:600;border-radius:999px;padding:3px 8px;border:1px solid currentColor;background:var(--bg);cursor:pointer}
+.st-enviado{color:var(--c6)} .st-aprovado{color:var(--ok)} .st-recusado{color:var(--danger)} .st-entregue{color:var(--muted)}
+.editbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;font-size:13px;padding:8px 10px;border-radius:4px;background:var(--soft)}
+.editing{outline:2px solid var(--c2);outline-offset:-2px}
+</style>
+
+<div class="wrap">
+<header>
+  <div>
+    <h1>Ideia</h1>
+    <p class="sub">Orçamentos e clientes da sua oficina de impressão 3D. No orçamento, é só escolher.</p>
+  </div>
+  <span class="tag" id="dbStatus">conectando ao cadastro…</span>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab" role="tab" id="t-orcamento" data-v="orcamento" type="button">Orçamento</button>
+  <button class="tab" role="tab" id="t-historico" data-v="historico" type="button">Histórico<span class="cnt" id="cHist">0</span></button>
+  <button class="tab" role="tab" id="t-clientes" data-v="clientes" type="button">Clientes<span class="cnt" id="cCli">0</span></button>
+  <button class="tab" role="tab" id="t-filamentos" data-v="filamentos" type="button">Filamentos<span class="cnt" id="cFil">0</span></button>
+  <button class="tab" role="tab" id="t-impressoras" data-v="impressoras" type="button">Impressoras<span class="cnt" id="cImp">0</span></button>
+  <button class="tab" role="tab" id="t-insumos" data-v="insumos" type="button">Insumos<span class="cnt" id="cIns">0</span></button>
+</nav>
+
+<!-- ============ ORÇAMENTO ============ -->
+<section id="v-orcamento">
+<div class="grid">
+<div class="panels">
+
+<fieldset>
+  <legend>Trabalho (do fatiador)</legend>
+  <div class="row">
+    <label>Cliente<div class="in"><select id="cli"><option value="">Sem cliente</option></select></div></label>
+    <label>Peça / descrição<div class="in"><input id="nome" type="text" value="Suporte de headset"></div></label>
+    <label>Impressora<div class="in"><select id="imp"><option value="">Manual (preencher abaixo)</option></select></div></label>
+    <label>Filamento<div class="in"><select id="mat"></select></div></label>
+    <label>Quantidade de peças<div class="in"><input id="qtd" type="number" min="1" step="1" value="3"><span class="u">un</span></div></label>
+    <label>Peças por mesa<div class="in"><input id="ppm" type="number" min="1" step="1" value="2"><span class="u">un</span></div></label>
+    <label>Filamento por mesa<div class="in"><input id="gpm" type="number" min="0" step="0.1" value="48"><span class="u">g</span></div></label>
+    <label>Tempo por mesa<div class="in"><input id="hpm" type="number" min="0" step="0.05" value="3.5"><span class="u">h</span></div></label>
+  </div>
+  <p class="hint" id="platesHint"></p>
+</fieldset>
+
+<fieldset>
+  <legend>Material</legend>
+  <div class="row">
+    <label>Preço por kg (com frete)<div class="in"><span class="u pre">R$</span><input id="kg" type="number" min="0" step="0.5" value="110"></div></label>
+    <label>Desperdício (purga, saia)<div class="in"><input id="waste" type="number" min="0" step="1" value="5"><span class="u">%</span></div></label>
+  </div>
+  <p class="hint" id="matSrc"></p>
+</fieldset>
+
+<fieldset>
+  <legend>Máquina</legend>
+  <div class="row">
+    <label>Consumo médio<div class="in"><input id="watt" type="number" min="0" step="5" value="120"><span class="u">W</span></div></label>
+    <label>Preço da impressora<div class="in"><span class="u pre">R$</span><input id="pprice" type="number" min="0" step="50" value="3200"></div></label>
+    <label>Vida útil estimada<div class="in"><input id="life" type="number" min="1" step="100" value="6000"><span class="u">h</span></div></label>
+    <label>Manutenção (bico, mesa, correias)<div class="in"><span class="u pre">R$</span><input id="maint" type="number" min="0" step="0.05" value="0.40"><span class="u">/h</span></div></label>
+    <label>Tarifa de energia<div class="in"><span class="u pre">R$</span><input id="kwh" type="number" min="0" step="0.01" value="1.05"><span class="u">/kWh</span></div></label>
+    <label>Taxa de falha<div class="in"><input id="fail" type="number" min="0" step="1" value="8"><span class="u">%</span></div></label>
+  </div>
+  <p class="hint">Custo da máquina por hora (energia + depreciação + manutenção): <b id="machH"></b></p>
+  <p class="hint" id="impSrc"></p>
+</fieldset>
+
+<fieldset>
+  <legend>Mão de obra e extras</legend>
+  <div class="row">
+    <label>Valor da sua hora<div class="in"><span class="u pre">R$</span><input id="rate" type="number" min="0" step="1" value="40"><span class="u">/h</span></div></label>
+    <label>Preparo (modelar, fatiar, mesa)<div class="in"><input id="setup" type="number" min="0" step="1" value="20"><span class="u">min</span></div></label>
+    <label>Acabamento por peça<div class="in"><input id="post" type="number" min="0" step="1" value="5"><span class="u">min</span></div></label>
+    <label>Outros extras por peça (avulso)<div class="in"><span class="u pre">R$</span><input id="xpc" type="number" min="0" step="0.5" value="0"></div></label>
+    <label>Embalagem / envio do pedido<div class="in"><span class="u pre">R$</span><input id="xjob" type="number" min="0" step="0.5" value="3"></div></label>
+  </div>
+</fieldset>
+
+<fieldset>
+  <legend>Insumos do pedido</legend>
+  <div class="addrow">
+    <label>Insumo<div class="in"><select id="o_ins"></select></div></label>
+    <label>Quantidade<div class="in"><input id="o_qtd" type="number" min="0" step="0.1" value="1"><span class="u" id="o_un">un</span></div></label>
+    <label>Conta<div class="in"><select id="o_por"><option value="peca">por peça</option><option value="pedido">por pedido</option></select></div></label>
+    <button type="button" id="o_add">Adicionar</button>
+  </div>
+  <div class="ilines" id="o_lines"></div>
+  <p class="hint" id="o_hint"></p>
+</fieldset>
+
+<fieldset>
+  <legend>Pintura (opcional)</legend>
+  <label class="chk"><input id="pint" type="checkbox"> Peça com pintura</label>
+  <div class="row mt" id="pintRow">
+    <label>Tinta e insumos por peça<div class="in"><span class="u pre">R$</span><input id="pmat" type="number" min="0" step="0.5" value="12"></div></label>
+    <label>Tempo de pintura por peça<div class="in"><input id="pmin" type="number" min="0" step="1" value="15"><span class="u">min</span></div></label>
+  </div>
+  <p class="hint">O tempo de pintura é cobrado pelo valor da sua hora, igual ao preparo.</p>
+</fieldset>
+
+<fieldset>
+  <legend>Retorno da máquina (opcional)</legend>
+  <label class="chk"><input id="ret" type="checkbox"> Cobrar a mais para pagar a impressora antes da vida útil</label>
+  <div class="row mt" id="retRow">
+    <label>Pagar em<div class="in"><input id="rmeses" type="number" min="1" step="1" value="12"><span class="u">meses</span></div></label>
+    <label>Uso real da impressora<div class="in"><input id="rhoras" type="number" min="1" step="10" value="160"><span class="u">h/mês</span></div></label>
+  </div>
+  <p class="hint" id="retHint"></p>
+</fieldset>
+
+<fieldset>
+  <legend>Preço</legend>
+  <div class="row">
+    <label>Margem sobre o custo<div class="in"><input id="markup" type="number" min="0" step="5" value="80"><span class="u">%</span></div></label>
+    <label>Taxa de pagamento/marketplace<div class="in"><input id="fee" type="number" min="0" max="90" step="0.5" value="0"><span class="u">%</span></div></label>
+    <label>Pedido mínimo<div class="in"><span class="u pre">R$</span><input id="minimo" type="number" min="0" step="5" value="30"></div></label>
+  </div>
+  <p class="hint">A taxa é embutida no preço: você recebe o valor líquido calculado, não o bruto menos a taxa.</p>
+</fieldset>
+
+</div>
+
+<aside class="ticket" aria-live="polite">
+  <div class="price">
+    <small>Preço sugerido</small>
+    <div class="big" id="pTotal">—</div>
+    <div class="pp" id="pPiece"></div>
+  </div>
+  <div class="body">
+    <div class="editbar" id="editBar" hidden><span>Editando orçamento de <b id="editWhen"></b></span><button type="button" class="mini" id="newOrc">Novo orçamento</button></div>
+    <div class="bar" id="bar"></div>
+    <table class="bk"><tbody id="tb"></tbody></table>
+    <div class="kpis">
+      <div class="kpi"><div>Lucro líquido</div><b id="kLucro"></b></div>
+      <div class="kpi"><div>Margem real</div><b id="kMarg"></b></div>
+      <div class="kpi"><div>Seu R$/hora</div><b id="kHora"></b></div>
+    </div>
+    <div class="warn" id="warn" hidden></div>
+    <textarea id="quote" aria-label="Texto do orçamento" readonly></textarea>
+    <div class="btns">
+      <button id="saveOrc" type="button">Salvar orçamento</button>
+      <button id="copy" type="button" class="ghost">Copiar texto</button>
+      <button id="reset" type="button" class="ghost">Restaurar exemplo</button>
+    </div>
+    <div class="toast" id="toast"></div>
+  </div>
+</aside>
+</div>
+</section>
+
+<!-- ============ HISTÓRICO ============ -->
+<section id="v-historico" hidden>
+  <div class="filters">
+    <label>Status<div class="in"><select id="h_status"><option value="">Todos</option><option value="enviado">Enviado</option><option value="aprovado">Aprovado</option><option value="recusado">Recusado</option><option value="entregue">Entregue</option></select></div></label>
+    <label>Cliente<div class="in"><select id="h_cli"><option value="">Todos</option></select></div></label>
+    <label>Buscar<div class="in"><input id="h_busca" type="text" placeholder="Peça, cliente ou material"></div></label>
+  </div>
+  <div class="kpis k4">
+    <div class="kpi"><div>Orçamentos</div><b id="hN"></b></div>
+    <div class="kpi"><div>Aprovação</div><b id="hAprov"></b></div>
+    <div class="kpi"><div>Fechado</div><b id="hFat"></b></div>
+    <div class="kpi"><div>Lucro estimado</div><b id="hLuc"></b></div>
+  </div>
+  <div class="list">
+    <div class="tw"><table><thead><tr><th>Data</th><th>Cliente / peça</th><th>Preço</th><th>Status</th><th></th></tr></thead><tbody id="hList"></tbody></table></div>
+    <p class="empty" id="hEmpty">Nenhum orçamento salvo ainda. Monte um na aba Orçamento e toque em Salvar orçamento.</p>
+    <span class="fmsg" id="hMsg"></span>
+  </div>
+</section>
+
+<!-- ============ CLIENTES ============ -->
+<section id="v-clientes" hidden>
+<div class="grid cad">
+  <form id="cForm" autocomplete="off">
+  <fieldset id="cSet">
+    <legend id="cLeg">Novo cliente</legend>
+    <div class="row">
+      <label>Nome<div class="in"><input id="c_nome" type="text" placeholder="Nome ou empresa"></div></label>
+      <label>WhatsApp / telefone<div class="in"><input id="c_tel" type="text" inputmode="tel" placeholder="(31) 99999-0000"></div></label>
+      <label>E-mail<div class="in"><input id="c_email" type="text" inputmode="email" placeholder="cliente@email.com"></div></label>
+      <label>Cidade<div class="in"><input id="c_cidade" type="text" placeholder="Belo Horizonte"></div></label>
+    </div>
+    <label class="mt">Observações<div class="in"><input id="c_obs" type="text" placeholder="Prefere PETG preto, retira no local"></div></label>
+    <div class="formbtns">
+      <button type="submit" id="cSave">Cadastrar cliente</button>
+      <button type="button" class="ghost" id="cCancel" hidden>Cancelar edição</button>
+      <span class="fmsg" id="cMsg"></span>
+    </div>
+  </fieldset>
+  </form>
+  <div class="list">
+    <h2>Clientes cadastrados</h2>
+    <div class="in search"><input id="c_busca" type="text" placeholder="Buscar por nome, telefone ou cidade" aria-label="Buscar cliente"></div>
+    <div class="tw"><table><thead><tr><th>Cliente</th><th>Contato</th><th></th></tr></thead><tbody id="cList"></tbody></table></div>
+    <p class="empty" id="cEmpty">Nenhum cliente cadastrado. Use o formulário para adicionar o primeiro.</p>
+  </div>
+</div>
+</section>
+
+<!-- ============ FILAMENTOS ============ -->
+<section id="v-filamentos" hidden>
+<div class="grid cad">
+  <form id="fForm" autocomplete="off">
+  <fieldset id="fSet">
+    <legend id="fLeg">Novo filamento</legend>
+    <div class="row">
+      <label>Nome<div class="in"><input id="f_nome" type="text" placeholder="PLA Preto Voolt"></div></label>
+      <label>Tipo<div class="in"><select id="f_tipo"></select></div></label>
+      <label>Marca<div class="in"><input id="f_marca" type="text" placeholder="Voolt3D"></div></label>
+      <label>Cor<div class="in"><input id="f_cor" type="color" value="#222222"></div></label>
+      <label>Preço do rolo<div class="in"><span class="u pre">R$</span><input id="f_preco" type="number" min="0" step="0.5" value="110"></div></label>
+      <label>Frete por rolo<div class="in"><span class="u pre">R$</span><input id="f_frete" type="number" min="0" step="0.5" value="0"></div></label>
+      <label>Peso do rolo<div class="in"><input id="f_peso" type="number" min="1" step="50" value="1000"><span class="u">g</span></div></label>
+    </div>
+    <p class="hint">Preço por kg com frete: <b id="f_kg"></b></p>
+    <div class="formbtns">
+      <button type="submit" id="fSave">Cadastrar filamento</button>
+      <button type="button" class="ghost" id="fCancel" hidden>Cancelar edição</button>
+      <span class="fmsg" id="fMsg"></span>
+    </div>
+  </fieldset>
+  </form>
+  <div class="list">
+    <h2>Filamentos cadastrados</h2>
+    <div class="tw"><table><thead><tr><th>Filamento</th><th>Tipo</th><th>R$/kg</th><th></th></tr></thead><tbody id="fList"></tbody></table></div>
+    <p class="empty" id="fEmpty">Nenhum filamento cadastrado. Use o formulário para adicionar o primeiro rolo.</p>
+  </div>
+</div>
+</section>
+
+<!-- ============ IMPRESSORAS ============ -->
+<section id="v-impressoras" hidden>
+<div class="grid cad">
+  <form id="pForm" autocomplete="off">
+  <fieldset id="pSet">
+    <legend id="pLeg">Nova impressora</legend>
+    <div class="row">
+      <label>Nome<div class="in"><input id="p_nome" type="text" placeholder="Creality K1C"></div></label>
+      <label>Preço pago<div class="in"><span class="u pre">R$</span><input id="p_preco" type="number" min="0" step="50" value="3000"></div></label>
+      <label>Vida útil estimada<div class="in"><input id="p_vida" type="number" min="1" step="100" value="6000"><span class="u">h</span></div></label>
+      <label>Consumo médio<div class="in"><input id="p_watt" type="number" min="0" step="5" value="120"><span class="u">W</span></div></label>
+      <label>Manutenção<div class="in"><span class="u pre">R$</span><input id="p_manut" type="number" min="0" step="0.05" value="0.40"><span class="u">/h</span></div></label>
+    </div>
+    <p class="hint">Custo por hora com a tarifa atual: <b id="p_h"></b></p>
+    <div class="formbtns">
+      <button type="submit" id="pSave">Cadastrar impressora</button>
+      <button type="button" class="ghost" id="pCancel" hidden>Cancelar edição</button>
+      <span class="fmsg" id="pMsg"></span>
+    </div>
+  </fieldset>
+  </form>
+  <div class="list">
+    <h2>Impressoras cadastradas</h2>
+    <div class="tw"><table><thead><tr><th>Impressora</th><th>Consumo</th><th>Custo/h</th><th></th></tr></thead><tbody id="pList"></tbody></table></div>
+    <p class="empty" id="pEmpty">Nenhuma impressora cadastrada. Use o formulário para adicionar a primeira.</p>
+  </div>
+</div>
+</section>
+
+<!-- ============ INSUMOS ============ -->
+<section id="v-insumos" hidden>
+<div class="grid cad">
+  <form id="iForm" autocomplete="off">
+  <fieldset id="iSet">
+    <legend id="iLeg">Novo insumo</legend>
+    <div class="row">
+      <label>Nome<div class="in"><input id="i_nome" type="text" placeholder="Ímã de neodímio 6×2 mm"></div></label>
+      <label>Unidade de uso<div class="in"><select id="i_unid"><option value="un">unidade (un)</option><option value="ml">mililitro (ml)</option><option value="g">grama (g)</option><option value="cm">centímetro (cm)</option><option value="folha">folha</option></select></div></label>
+      <label>Preço pago<div class="in"><span class="u pre">R$</span><input id="i_preco" type="number" min="0" step="0.5" value="25"></div></label>
+      <label>Quantidade na embalagem<div class="in"><input id="i_qtd" type="number" min="0.001" step="1" value="50"><span class="u" id="i_un">un</span></div></label>
+    </div>
+    <p class="hint">Custo por unidade: <b id="i_cu"></b></p>
+    <div class="formbtns">
+      <button type="submit" id="iSave">Cadastrar insumo</button>
+      <button type="button" class="ghost" id="iCancel" hidden>Cancelar edição</button>
+      <span class="fmsg" id="iMsg"></span>
+    </div>
+  </fieldset>
+  </form>
+  <div class="list">
+    <h2>Insumos cadastrados</h2>
+    <div class="tw"><table><thead><tr><th>Insumo</th><th>Embalagem</th><th>Custo/un</th><th></th></tr></thead><tbody id="iList"></tbody></table></div>
+    <p class="empty" id="iEmpty">Nenhum insumo cadastrado. Cadastre cola, ímãs, parafusos, tinta ou embalagens para usar nos orçamentos.</p>
+  </div>
+</div>
+</section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const PRESETS={PLA:110,"PLA Silk":140,PETG:105,ABS:90,ASA:150,TPU:170,"PLA-CF":220};
+const TIPOS=["PLA","PLA Silk","PLA-CF","PETG","ABS","ASA","TPU","Tritan","Wood","Outro"];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num=v=>{const x=parseFloat(String(v??"").replace(",","."));return isFinite(x)?x:0};
+const n=id=>num($(id).value);
+const brl=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const precoKg=f=>num(f.pesoRolo)>0?(num(f.precoRolo)+num(f.frete))/(num(f.pesoRolo)/1000):0;
+const custoHora=p=>num(p.watt)/1000*n("kwh")+num(p.preco)/Math.max(1,num(p.vida))+num(p.manut);
+let DB=null, canWrite=true, orcamentos=[], curOrc=null, clientes=[], filamentos=[], impressoras=[], insumos=[], linhas=[];
+const custoUn=i=>num(i.qtdEmb)>0?num(i.preco)/num(i.qtdEmb):0;
+const fmtUn=v=>v<0.1?v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:3,maximumFractionDigits:4}):brl(v);
+let sel={mat:"",imp:""};
+
+$("f_tipo").innerHTML=TIPOS.map(t=>`<option>${esc(t)}</option>`).join("");
+
+/* ---------- abas ---------- */
+const VIEWS=["orcamento","historico","clientes","filamentos","impressoras","insumos"];
+function show(v,push){
+  if(!VIEWS.includes(v)) v="orcamento";
+  VIEWS.forEach(x=>{$("v-"+x).hidden=x!==v;$("t-"+x).setAttribute("aria-selected",String(x===v))});
+  if(push){try{history.replaceState(null,"","#"+v)}catch(e){}}
+}
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>show(b.dataset.v,true)));
+show(location.hash.slice(1));
+
+/* ---------- configuração da oficina ---------- */
+const FIELDS=["nome","qtd","ppm","gpm","hpm","kg","waste","watt","kwh","pprice","life","maint","fail","rate","setup","post","xpc","xjob","pint","pmat","pmin","ret","rmeses","rhoras","markup","fee","minimo"];
+const SAVE=["kg","waste","watt","kwh","pprice","life","maint","fail","rate","setup","post","xjob","pmat","pmin","ret","rmeses","rhoras","markup","fee","minimo"];
+const get=f=>{const el=$(f);return el.type==="checkbox"?el.checked:el.value};
+const set=(f,v)=>{const el=$(f);if(el.type==="checkbox")el.checked=!!v;else el.value=v};
+const DEF={};FIELDS.forEach(f=>DEF[f]=get(f));
+const KEY="orc3d.oficina.v2";
+function cfgObj(){const o={};SAVE.forEach(f=>o[f]=get(f));o.matSel=$("mat").value;o.impSel=$("imp").value;return o}
+function applyCfg(o){if(!o)return;SAVE.forEach(f=>{if(o[f]!=null)set(f,o[f])});if(o.matSel)sel.mat=o.matSel;if(o.impSel!=null)sel.imp=o.impSel}
+try{applyCfg(JSON.parse(localStorage.getItem(KEY)||"null"))}catch(e){}
+let lastCfg="", cfgTimer=null, cfgBusy=false;
+function saveCfg(){
+  clearTimeout(cfgTimer);
+  cfgTimer=setTimeout(async()=>{
+    const o=cfgObj(), s=JSON.stringify(o);
+    try{localStorage.setItem(KEY,s)}catch(e){}
+    if(!DB||!canWrite||s===lastCfg||cfgBusy) return;
+    cfgBusy=true;
+    try{await DB.doc("config/oficina").set(o);lastCfg=s}
+    catch(e){if(e&&e.code==="invalid_argument")canWrite=false}
+    finally{cfgBusy=false}
+  },1200);
+}
+
+/* ---------- seleção de filamento e impressora ---------- */
+function fillSelects(){
+  const ms=$("mat"), curM=ms.value||sel.mat;
+  let h="";
+  if(filamentos.length) h+='<optgroup label="Cadastrados">'+filamentos.map(f=>`<option value="db:${esc(f.id)}">${esc(f.nome)}</option>`).join("")+"</optgroup>";
+  h+='<optgroup label="Genéricos">'+Object.keys(PRESETS).map(k=>`<option value="preset:${esc(k)}">${esc(k)} (genérico)</option>`).join("")+"</optgroup>";
+  ms.innerHTML=h;
+  if([...ms.options].some(o=>o.value===curM)) ms.value=curM;
+  const is=$("imp"), curI=is.value||sel.imp;
+  is.innerHTML='<option value="">Manual (preencher abaixo)</option>'+impressoras.map(p=>`<option value="${esc(p.id)}">${esc(p.nome)}</option>`).join("");
+  if([...is.options].some(o=>o.value===curI)) is.value=curI;
+  sel.mat=ms.value; sel.imp=is.value;
+}
+function curFil(){const v=$("mat").value;return v.startsWith("db:")?filamentos.find(f=>f.id===v.slice(3)):null}
+function curImp(){const v=$("imp").value;return v?impressoras.find(p=>p.id===v):null}
+function applyMat(){
+  const f=curFil(), v=$("mat").value;
+  if(f){$("kg").value=precoKg(f).toFixed(2);$("matSrc").textContent=`Preço do cadastro: ${f.nome}. Alterar aqui vale só para este orçamento.`}
+  else if(v.startsWith("preset:")){$("kg").value=PRESETS[v.slice(7)];$("matSrc").textContent="Preço médio genérico. Cadastre seu rolo na aba Filamentos para usar o preço real."}
+}
+function applyImp(){
+  const p=curImp();
+  if(p){set("watt",num(p.watt));set("pprice",num(p.preco));set("life",num(p.vida));set("maint",num(p.manut));$("impSrc").textContent=`Dados do cadastro: ${p.nome}. Alterar aqui vale só para este orçamento.`}
+  else $("impSrc").textContent="Modo manual: cadastre a impressora na aba Impressoras para não digitar de novo.";
+}
+function matLabel(){const f=curFil();if(f)return f.tipo&&!f.nome.toLowerCase().includes(String(f.tipo).toLowerCase())?`${f.nome} (${f.tipo})`:f.nome;const v=$("mat").value;return v.startsWith("preset:")?v.slice(7):"—"}
+
+/* ---------- cálculo ---------- */
+function calc(){
+  const qtd=Math.max(1,Math.round(n("qtd"))), ppm=Math.max(1,Math.round(n("ppm")));
+  const mesas=Math.ceil(qtd/ppm);
+  const gramas=n("gpm")*mesas*(1+n("waste")/100);
+  const horas=n("hpm")*mesas;
+  const material=gramas/1000*n("kg");
+  const energia=horas*n("watt")/1000*n("kwh");
+  const deprH=n("pprice")/Math.max(1,n("life"));
+  const deprec=horas*deprH;
+  const manut=horas*n("maint");
+  const falha=(material+energia+deprec+manut)*n("fail")/100;
+  const minutos=n("setup")+n("post")*qtd;
+  const mao=minutos/60*n("rate");
+  const insLinhas=linhas.map(l=>{const i=insumos.find(x=>x.id===l.id);const cu=i?custoUn(i):0;const total=cu*l.qtd*(l.por==="peca"?qtd:1);return {...l,i,cu,total}});
+  const extras=n("xpc")*qtd+n("xjob")+insLinhas.reduce((a,l)=>a+l.total,0);
+  const pint=$("pint").checked;
+  const pintMin=pint?n("pmin")*qtd:0;
+  const pintLabor=pintMin/60*n("rate");
+  const pintura=(pint?n("pmat")*qtd:0)+pintLabor;
+  const custo=material+energia+deprec+manut+falha+mao+extras+pintura;
+  const ret=$("ret").checked;
+  const metaH=ret?n("pprice")/Math.max(1,n("rmeses")*n("rhoras")):0;
+  const retorno=Math.max(0,metaH-deprH)*horas;
+  const fee=Math.min(n("fee"),90)/100;
+  const calcP=(custo*(1+n("markup")/100)+retorno)/(1-fee);
+  const preco=Math.max(calcP,n("minimo"));
+  const liquido=preco*(1-fee);
+  const lucro=liquido-custo;
+  return {insLinhas,qtd,ppm,mesas,gramas,horas,material,energia,deprec,deprH,manut,falha,mao,extras,pint,pintura,pintLabor,custo,ret,metaH,retorno,preco,calcP,liquido,lucro,minTot:minutos+pintMin};
+}
+
+function render(){
+  const r=calc();
+  $("machH").textContent=brl(n("watt")/1000*n("kwh")+r.deprH+n("maint"))+"/h";
+  const sobra=r.mesas*r.ppm-r.qtd;
+  $("platesHint").innerHTML=`<b>${r.mesas}</b> mesa(s) · <b>${r.horas.toLocaleString("pt-BR",{maximumFractionDigits:2})} h</b> de máquina · <b>${Math.round(r.gramas)} g</b> com desperdício`+(sobra?` · última mesa com ${sobra} vaga(s) livre(s)`:"");
+  $("pintRow").classList.toggle("off",!r.pint);
+  $("retRow").classList.toggle("off",!r.ret);
+  if(!r.ret) $("retHint").textContent="Desligado: a máquina entra no custo só pela depreciação ao longo da vida útil.";
+  else if(r.metaH<=r.deprH) $("retHint").innerHTML=`Meta de <b>${brl(r.metaH)}/h</b> é menor que a depreciação (<b>${brl(r.deprH)}/h</b>). Nada é adicionado.`;
+  else $("retHint").innerHTML=`Meta <b>${brl(r.metaH)}/h</b> − depreciação já no custo <b>${brl(r.deprH)}/h</b> = <b>${brl(r.metaH-r.deprH)}/h</b> a mais no preço, sem margem em cima.`;
+  $("pTotal").textContent=brl(r.preco);
+  $("pPiece").textContent=`${brl(r.preco/r.qtd)} por peça · ${r.qtd} peça(s)`;
+  const items=[
+    ["Filamento",r.material,"--c1"],["Energia",r.energia,"--c2"],["Depreciação",r.deprec,"--c3"],
+    ["Manutenção",r.manut,"--c4"],["Reserva p/ falhas",r.falha,"--c5"],["Mão de obra",r.mao,"--c6"],["Insumos e extras",r.extras,"--c7"]];
+  if(r.pint) items.push(["Pintura",r.pintura,"--c8"]);
+  const tot=r.custo||1;
+  $("bar").innerHTML=items.map(([l,v,c])=>`<span title="${l}" style="width:${v/tot*100}%;background:var(${c})"></span>`).join("");
+  $("tb").innerHTML=items.map(([l,v,c])=>`<tr><td><span class="dot" style="background:var(${c})"></span>${l}</td><td>${brl(v)}<span class="pc">${Math.round(v/tot*100)}%</span></td></tr>`).join("")+
+    `<tr class="tot"><td>Custo total</td><td>${brl(r.custo)}</td></tr>`+
+    (r.retorno>0?`<tr class="ret"><td>+ Retorno acelerado (entra no preço)</td><td>${brl(r.retorno)}</td></tr>`:"");
+  $("kLucro").textContent=brl(r.lucro);
+  $("kMarg").textContent=r.preco?Math.round(r.lucro/r.preco*100)+"%":"—";
+  $("kHora").textContent=r.minTot?brl((r.mao+r.pintLabor+r.lucro)/(r.minTot/60)):"—";
+  const w=[];
+  if(r.preco>r.calcP+0.005) w.push(`Pedido mínimo aplicado: o cálculo dava ${brl(r.calcP)}.`);
+  if(r.material>0 && r.mao>r.material*3) w.push("A mão de obra pesa mais que 3× o filamento. Em peças pequenas, quem define o preço é o seu tempo.");
+  if(r.retorno>0) w.push(`O lucro mostrado inclui ${brl(r.retorno)} de retorno acelerado da impressora.`);
+  $("warn").hidden=!w.length;$("warn").textContent=w.join(" ");
+  const nome=$("nome").value.trim()||"Impressão 3D";
+  const cl=clientes.find(c=>c.id===$("cli").value);
+  $("quote").value=`*Orçamento — ${nome}*\n`+
+   (cl?`Cliente: ${cl.nome}\n`:"")+
+   `Material: ${matLabel()}\n`+
+   `Acabamento: ${r.pint?"pintado":"sem pintura"}\n`+
+   `Quantidade: ${r.qtd} peça(s)\n`+
+   `Tempo de produção: ~${Math.ceil(r.horas)} h de impressão\n\n`+
+   `Valor por peça: ${brl(r.preco/r.qtd)}\n`+
+   `*Total: ${brl(r.preco)}*\n\n`+
+   `Orçamento válido por 7 dias.`;
+  $("f_kg").textContent=brl(precoKg({precoRolo:$("f_preco").value,frete:$("f_frete").value,pesoRolo:$("f_peso").value}))+"/kg";
+  $("o_lines").innerHTML=r.insLinhas.map((l,k)=>`<div class="iline"><span class="nm">${l.i?esc(l.i.nome):"Insumo excluído do cadastro"}</span><span class="v">${l.qtd.toLocaleString("pt-BR")} ${esc(l.i?.unid||"un")} ${l.por==="peca"?"× "+r.qtd+" peça(s)":"no pedido"}</span><span class="v">${brl(l.total)}</span><button type="button" class="mini del" data-rm="${k}">Remover</button></div>`).join("");
+  $("o_hint").textContent=insumos.length?(r.insLinhas.length?"":"Nenhum insumo neste pedido."):"Cadastre insumos na aba Insumos para escolher aqui.";
+  const oi=insumos.find(x=>x.id===$("o_ins").value);$("o_un").textContent=oi?.unid||"un";
+  $("i_un").textContent=$("i_unid").value;
+  $("i_cu").textContent=fmtUn(custoUn({preco:$("i_preco").value,qtdEmb:$("i_qtd").value}))+"/"+$("i_unid").value;
+  $("p_h").textContent=brl(custoHora({watt:$("p_watt").value,preco:$("p_preco").value,vida:$("p_vida").value,manut:$("p_manut").value}))+"/h";
+}
+
+$("mat").addEventListener("change",()=>{sel.mat=$("mat").value;applyMat();render();saveCfg()});
+$("imp").addEventListener("change",()=>{sel.imp=$("imp").value;applyImp();render();saveCfg()});
+document.querySelectorAll("#v-orcamento input").forEach(el=>{el.addEventListener("input",()=>{render();saveCfg()});el.addEventListener("change",()=>{render();saveCfg()})});
+document.querySelectorAll("#v-filamentos input,#v-impressoras input,#v-insumos input,#v-insumos select").forEach(el=>{el.addEventListener("input",render);el.addEventListener("change",render)});
+$("o_ins").addEventListener("change",render);
+$("o_add").addEventListener("click",()=>{
+  const id=$("o_ins").value, q=n("o_qtd"); if(!id||q<=0) return;
+  const por=$("o_por").value, ex=linhas.find(l=>l.id===id&&l.por===por);
+  if(ex) ex.qtd+=q; else linhas.push({id,qtd:q,por});
+  render();
+});
+$("o_lines").addEventListener("click",e=>{const b=e.target.closest("button[data-rm]");if(!b)return;linhas.splice(+b.dataset.rm,1);render()});
+function fillIns(){
+  const s=$("o_ins"),cur=s.value;
+  s.innerHTML=insumos.length?insumos.map(i=>`<option value="${esc(i.id)}">${esc(i.nome)} · ${fmtUn(custoUn(i))}/${esc(i.unid||"un")}</option>`).join(""):'<option value="">Nenhum insumo cadastrado</option>';
+  if([...s.options].some(o=>o.value===cur)) s.value=cur;
+  $("o_add").disabled=!insumos.length;
+}
+$("copy").addEventListener("click",()=>{
+  const t=$("quote").value;
+  const ok=()=>{$("toast").textContent="Orçamento copiado.";setTimeout(()=>$("toast").textContent="",2500)};
+  const fb=()=>{$("quote").select();$("toast").textContent="Texto selecionado. Use Ctrl+C."};
+  try{navigator.clipboard.writeText(t).then(ok,fb)}catch(e){fb()}
+});
+$("reset").addEventListener("click",()=>{FIELDS.forEach(f=>set(f,DEF[f]));applyMat();applyImp();render();saveCfg();$("toast").textContent="Valores de exemplo restaurados. Filamento e impressora selecionados foram mantidos."});
+
+/* ---------- cadastros ---------- */
+function errText(e){
+  const c=e&&e.code;
+  if(c==="invalid_argument"){canWrite=false;return "Você não tem permissão para alterar o cadastro desta página."}
+  if(c==="quota_exceeded") return "Limite de cadastros atingido. Exclua itens que não usa mais.";
+  return "Não foi possível salvar agora. Tente de novo em alguns segundos.";
+}
+function flash(id,t){$(id).textContent=t;clearTimeout(flash[id]);flash[id]=setTimeout(()=>$(id).textContent="",4000)}
+let editFil=null, editImp=null, editIns=null, editCli=null, armed=null, armTimer=null;
+
+function renderFil(){
+  $("cFil").textContent=filamentos.length;
+  $("fEmpty").hidden=filamentos.length>0;
+  $("fList").innerHTML=filamentos.map(f=>`<tr>
+    <td><span class="sw" style="background:${/^#[0-9a-fA-F]{6}$/.test(f.cor||"")?f.cor:"transparent"}"></span>${esc(f.nome)}<span class="meta">${esc(f.marca||"")}${f.marca?" · ":""}${num(f.pesoRolo)} g · rolo ${brl(num(f.precoRolo))}${num(f.frete)?` + frete ${brl(num(f.frete))}`:""}</span></td>
+    <td>${esc(f.tipo||"")}</td>
+    <td class="n">${brl(precoKg(f))}</td>
+    <td class="act"><button type="button" class="mini" data-k="fil" data-act="edit" data-id="${esc(f.id)}">Editar</button><button type="button" class="mini del" data-k="fil" data-act="del" data-id="${esc(f.id)}">Excluir</button></td>
+  </tr>`).join("");
+}
+function renderImp(){
+  $("cImp").textContent=impressoras.length;
+  $("pEmpty").hidden=impressoras.length>0;
+  $("pList").innerHTML=impressoras.map(p=>`<tr>
+    <td>${esc(p.nome)}<span class="meta">${brl(num(p.preco))} · vida ${num(p.vida).toLocaleString("pt-BR")} h · manut. ${brl(num(p.manut))}/h</span></td>
+    <td class="n">${num(p.watt)} W</td>
+    <td class="n">${brl(custoHora(p))}</td>
+    <td class="act"><button type="button" class="mini" data-k="imp" data-act="edit" data-id="${esc(p.id)}">Editar</button><button type="button" class="mini del" data-k="imp" data-act="del" data-id="${esc(p.id)}">Excluir</button></td>
+  </tr>`).join("");
+}
+const waLink=t=>{let d=String(t||"").replace(/\D/g,"");if(d.length===10||d.length===11)d="55"+d;return d.length>=12?"https://wa.me/"+d:""};
+function fillCli(){
+  const s=$("cli"),cur=s.value;
+  s.innerHTML='<option value="">Sem cliente</option>'+clientes.map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join("");
+  if([...s.options].some(o=>o.value===cur)) s.value=cur;
+  const h=$("h_cli"),ch=h.value;
+  h.innerHTML='<option value="">Todos</option>'+clientes.map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join("");
+  if([...h.options].some(o=>o.value===ch)) h.value=ch;
+}
+const STATUS={enviado:"Enviado",aprovado:"Aprovado",recusado:"Recusado",entregue:"Entregue"};
+const fechado=o=>o.status==="aprovado"||o.status==="entregue";
+const dt=iso=>{try{return new Date(iso).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"2-digit"})}catch(e){return ""}};
+function renderHist(){
+  $("cHist").textContent=orcamentos.length;
+  const st=$("h_status").value, cli=$("h_cli").value, q=$("h_busca").value.trim().toLowerCase();
+  const vis=orcamentos.filter(o=>(!st||o.status===st)&&(!cli||o.clienteId===cli)&&(!q||[o.peca,o.clienteNome,o.material].some(v=>String(v||"").toLowerCase().includes(q))));
+  const ganhos=vis.filter(fechado), decididos=vis.filter(o=>o.status!=="enviado");
+  $("hN").textContent=vis.length;
+  $("hAprov").textContent=decididos.length?Math.round(ganhos.length/decididos.length*100)+"%":"—";
+  $("hFat").textContent=brl(ganhos.reduce((a,o)=>a+num(o.preco),0));
+  $("hLuc").textContent=brl(ganhos.reduce((a,o)=>a+num(o.lucro),0));
+  $("hEmpty").hidden=vis.length>0;
+  if(orcamentos.length&&!vis.length) $("hEmpty").textContent="Nenhum orçamento com esses filtros.";
+  else if(DB) $("hEmpty").textContent="Nenhum orçamento salvo ainda. Monte um na aba Orçamento e toque em Salvar orçamento.";
+  $("hList").innerHTML=vis.map(o=>{const s=STATUS[o.status]?o.status:"enviado";return `<tr>
+    <td class="n">${dt(o.criado)}</td>
+    <td>${esc(o.clienteNome||"Sem cliente")}<span class="meta">${esc(o.peca||"")} · ${esc(o.material||"")} · ${num(o.qtd)} pç${o.pintado?" · pintado":""}</span></td>
+    <td class="n">${brl(num(o.preco))}</td>
+    <td><select class="st st-${s}" data-orc="${esc(o.id)}" aria-label="Status">${Object.entries(STATUS).map(([k,v])=>`<option value="${k}"${k===s?" selected":""}>${v}</option>`).join("")}</select></td>
+    <td class="act"><button type="button" class="mini" data-k="orc" data-act="edit" data-id="${esc(o.id)}">Abrir</button><button type="button" class="mini del" data-k="orc" data-act="del" data-id="${esc(o.id)}">Excluir</button></td>
+  </tr>`}).join("");
+}
+["h_status","h_cli"].forEach(id=>$(id).addEventListener("change",renderHist));
+$("h_busca").addEventListener("input",renderHist);
+$("hList").addEventListener("change",async e=>{
+  const sl=e.target.closest("select[data-orc]");if(!sl||!DB)return;
+  sl.className="st st-"+sl.value;
+  try{await DB.collection("orcamentos").doc(sl.dataset.orc).update({status:sl.value,atualizado:new Date().toISOString()})}
+  catch(err){flash("hMsg",errText(err))}
+});
+function showEditBar(){
+  const o=orcamentos.find(x=>x.id===curOrc);
+  $("editBar").hidden=!curOrc;
+  $("editWhen").textContent=o?`${dt(o.criado)}${o.clienteNome?" · "+o.clienteNome:""}`:"";
+  $("saveOrc").textContent=curOrc?"Atualizar orçamento":"Salvar orçamento";
+}
+async function saveOrc(){
+  if(!DB){flash("toast","O histórico não está disponível nesta visualização.");return}
+  const r=calc(), cl=clientes.find(c=>c.id===$("cli").value), imp=curImp();
+  const inputs={};FIELDS.forEach(f=>inputs[f]=get(f));
+  inputs.matSel=$("mat").value;inputs.impSel=$("imp").value;inputs.cli=$("cli").value;
+  inputs.linhas=linhas.map(l=>({id:l.id,qtd:l.qtd,por:l.por}));
+  const data={peca:$("nome").value.trim()||"Impressão 3D",clienteId:cl?.id||"",clienteNome:cl?.nome||"",material:matLabel(),impressora:imp?.nome||"Manual",
+    qtd:r.qtd,horas:+r.horas.toFixed(2),gramas:Math.round(r.gramas),custo:+r.custo.toFixed(2),preco:+r.preco.toFixed(2),lucro:+r.lucro.toFixed(2),pintado:r.pint,inputs,atualizado:new Date().toISOString()};
+  $("saveOrc").disabled=true;
+  try{
+    if(curOrc){await DB.collection("orcamentos").doc(curOrc).update(data);flash("toast","Orçamento atualizado.")}
+    else{data.criado=data.atualizado;data.status="enviado";const ref=await DB.collection("orcamentos").add(data);curOrc=ref.id;flash("toast","Orçamento salvo no histórico.")}
+    showEditBar();
+  }catch(e){flash("toast",errText(e))}
+  finally{$("saveOrc").disabled=false}
+}
+function loadOrc(id){
+  const o=orcamentos.find(x=>x.id===id);if(!o)return;
+  const i=o.inputs||{};
+  FIELDS.forEach(f=>{if(i[f]!=null)set(f,i[f])});
+  const pick=(sid,v)=>{if(v!=null&&[...$(sid).options].some(op=>op.value===v))$(sid).value=v};
+  pick("mat",i.matSel);pick("imp",i.impSel);pick("cli",i.cli||"");
+  sel.mat=$("mat").value;sel.imp=$("imp").value;
+  linhas=Array.isArray(i.linhas)?i.linhas.map(l=>({id:l.id,qtd:num(l.qtd),por:l.por==="pedido"?"pedido":"peca"})):[];
+  curOrc=id;showEditBar();render();show("orcamento",true);
+  try{window.scrollTo({top:0})}catch(e){}
+  flash("toast","Orçamento carregado. Alterações só valem depois de Atualizar orçamento.");
+}
+$("saveOrc").addEventListener("click",saveOrc);
+$("newOrc").addEventListener("click",()=>{curOrc=null;linhas=[];$("cli").value="";showEditBar();render();flash("toast","Novo orçamento. Os parâmetros da oficina foram mantidos.")});
+function renderCli(){
+  $("cCli").textContent=clientes.length;
+  const q=$("c_busca").value.trim().toLowerCase();
+  const vis=q?clientes.filter(c=>[c.nome,c.tel,c.cidade,c.email].some(v=>String(v||"").toLowerCase().includes(q))):clientes;
+  $("cEmpty").hidden=vis.length>0;
+  if(clientes.length&&!vis.length) $("cEmpty").textContent="Nenhum cliente encontrado para essa busca.";
+  else if(DB) $("cEmpty").textContent="Nenhum cliente cadastrado. Use o formulário para adicionar o primeiro.";
+  $("cList").innerHTML=vis.map(c=>{const wa=waLink(c.tel);const os=orcamentos.filter(o=>o.clienteId===c.id);const ok=os.filter(fechado);return `<tr>
+    <td>${esc(c.nome)}<span class="meta">${esc([c.cidade,c.obs].filter(Boolean).join(" · "))}</span><span class="meta">${os.length?`${os.length} orçamento(s) · ${ok.length} fechado(s) · ${brl(ok.reduce((a,o)=>a+num(o.preco),0))}`:"Sem orçamentos"}</span></td>
+    <td><span class="n">${esc(c.tel||"")}</span>${wa?` <a class="lnk" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>`:""}<span class="meta">${esc(c.email||"")}</span></td>
+    <td class="act"><button type="button" class="mini" data-hist="${esc(c.id)}">Histórico</button> <button type="button" class="mini" data-k="cli" data-act="edit" data-id="${esc(c.id)}">Editar</button><button type="button" class="mini del" data-k="cli" data-act="del" data-id="${esc(c.id)}">Excluir</button></td>
+  </tr>`}).join("");
+}
+function resetCli(){editCli=null;$("cForm").reset();$("cLeg").textContent="Novo cliente";$("cSave").textContent="Cadastrar cliente";$("cCancel").hidden=true;$("cSet").classList.remove("editing")}
+function renderIns(){
+  $("cIns").textContent=insumos.length;
+  $("iEmpty").hidden=insumos.length>0;
+  $("iList").innerHTML=insumos.map(i=>`<tr>
+    <td>${esc(i.nome)}</td>
+    <td class="n">${brl(num(i.preco))} / ${num(i.qtdEmb).toLocaleString("pt-BR")} ${esc(i.unid||"un")}</td>
+    <td class="n">${fmtUn(custoUn(i))}</td>
+    <td class="act"><button type="button" class="mini" data-k="ins" data-act="edit" data-id="${esc(i.id)}">Editar</button><button type="button" class="mini del" data-k="ins" data-act="del" data-id="${esc(i.id)}">Excluir</button></td>
+  </tr>`).join("");
+}
+function resetIns(){editIns=null;$("iForm").reset();$("iLeg").textContent="Novo insumo";$("iSave").textContent="Cadastrar insumo";$("iCancel").hidden=true;$("iSet").classList.remove("editing");render()}
+function resetFil(){editFil=null;$("fForm").reset();$("f_cor").value="#222222";$("fLeg").textContent="Novo filamento";$("fSave").textContent="Cadastrar filamento";$("fCancel").hidden=true;$("fSet").classList.remove("editing");render()}
+function resetImp(){editImp=null;$("pForm").reset();$("pLeg").textContent="Nova impressora";$("pSave").textContent="Cadastrar impressora";$("pCancel").hidden=true;$("pSet").classList.remove("editing");render()}
+$("fCancel").addEventListener("click",resetFil);
+$("pCancel").addEventListener("click",resetImp);
+$("iCancel").addEventListener("click",resetIns);
+$("cCancel").addEventListener("click",resetCli);
+$("c_busca").addEventListener("input",renderCli);
+$("cli").addEventListener("change",render);
+$("cForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!DB){flash("cMsg","Cadastro indisponível nesta visualização.");return}
+  const data={nome:$("c_nome").value.trim(),tel:$("c_tel").value.trim(),email:$("c_email").value.trim(),cidade:$("c_cidade").value.trim(),obs:$("c_obs").value.trim()};
+  if(!data.nome){flash("cMsg","Informe o nome do cliente.");$("c_nome").focus();return}
+  const id=editCli; $("cSave").disabled=true;
+  try{
+    if(id) await DB.collection("clientes").doc(id).set(data); else await DB.collection("clientes").add(data);
+    resetCli(); flash("cMsg",id?"Cliente atualizado.":"Cliente cadastrado.");
+  }catch(err){flash("cMsg",errText(err))}
+  finally{$("cSave").disabled=false}
+});
+$("iForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!DB){flash("iMsg","Cadastro indisponível nesta visualização.");return}
+  const data={nome:$("i_nome").value.trim(),unid:$("i_unid").value,preco:n("i_preco"),qtdEmb:n("i_qtd")||1};
+  if(!data.nome){flash("iMsg","Dê um nome ao insumo.");$("i_nome").focus();return}
+  const id=editIns; $("iSave").disabled=true;
+  try{
+    if(id) await DB.collection("insumos").doc(id).set(data); else await DB.collection("insumos").add(data);
+    resetIns(); flash("iMsg",id?"Insumo atualizado.":"Insumo cadastrado.");
+  }catch(err){flash("iMsg",errText(err))}
+  finally{$("iSave").disabled=false}
+});
+
+$("fForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!DB){flash("fMsg","Cadastro indisponível nesta visualização.");return}
+  const data={nome:$("f_nome").value.trim(),tipo:$("f_tipo").value,marca:$("f_marca").value.trim(),cor:$("f_cor").value,precoRolo:n("f_preco"),frete:n("f_frete"),pesoRolo:n("f_peso")||1000};
+  if(!data.nome){flash("fMsg","Dê um nome ao filamento.");$("f_nome").focus();return}
+  const id=editFil; $("fSave").disabled=true;
+  try{
+    if(id) await DB.collection("filamentos").doc(id).set(data); else await DB.collection("filamentos").add(data);
+    resetFil(); flash("fMsg",id?"Filamento atualizado.":"Filamento cadastrado.");
+  }catch(err){flash("fMsg",errText(err))}
+  finally{$("fSave").disabled=false}
+});
+$("pForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!DB){flash("pMsg","Cadastro indisponível nesta visualização.");return}
+  const data={nome:$("p_nome").value.trim(),preco:n("p_preco"),vida:n("p_vida")||1,watt:n("p_watt"),manut:n("p_manut")};
+  if(!data.nome){flash("pMsg","Dê um nome à impressora.");$("p_nome").focus();return}
+  const id=editImp; $("pSave").disabled=true;
+  try{
+    if(id) await DB.collection("impressoras").doc(id).set(data); else await DB.collection("impressoras").add(data);
+    resetImp(); flash("pMsg",id?"Impressora atualizada.":"Impressora cadastrada.");
+  }catch(err){flash("pMsg",errText(err))}
+  finally{$("pSave").disabled=false}
+});
+
+document.addEventListener("click",async e=>{
+  const hb=e.target.closest("button[data-hist]");
+  if(hb){$("h_cli").value=hb.dataset.hist;$("h_status").value="";$("h_busca").value="";renderHist();show("historico",true);return}
+  const b=e.target.closest("button[data-act]"); if(!b) return;
+  const {k,act,id}=b.dataset;
+  const list={fil:filamentos,imp:impressoras,ins:insumos,cli:clientes,orc:orcamentos}[k], item=list.find(x=>x.id===id); if(!item) return;
+  if(act==="edit"){
+    if(k==="orc"){loadOrc(id);return}
+    if(k==="fil"){editFil=id;set("f_nome",item.nome||"");set("f_tipo",TIPOS.includes(item.tipo)?item.tipo:"Outro");set("f_marca",item.marca||"");set("f_cor",/^#[0-9a-fA-F]{6}$/.test(item.cor||"")?item.cor:"#222222");set("f_preco",num(item.precoRolo));set("f_frete",num(item.frete));set("f_peso",num(item.pesoRolo));
+      $("fLeg").textContent="Editando filamento";$("fSave").textContent="Salvar alterações";$("fCancel").hidden=false;$("fSet").classList.add("editing");$("f_nome").focus()}
+    else if(k==="cli"){editCli=id;set("c_nome",item.nome||"");set("c_tel",item.tel||"");set("c_email",item.email||"");set("c_cidade",item.cidade||"");set("c_obs",item.obs||"");
+      $("cLeg").textContent="Editando cliente";$("cSave").textContent="Salvar alterações";$("cCancel").hidden=false;$("cSet").classList.add("editing");$("c_nome").focus()}
+    else if(k==="ins"){editIns=id;set("i_nome",item.nome||"");set("i_unid",item.unid||"un");set("i_preco",num(item.preco));set("i_qtd",num(item.qtdEmb));
+      $("iLeg").textContent="Editando insumo";$("iSave").textContent="Salvar alterações";$("iCancel").hidden=false;$("iSet").classList.add("editing");$("i_nome").focus()}
+    else{editImp=id;set("p_nome",item.nome||"");set("p_preco",num(item.preco));set("p_vida",num(item.vida));set("p_watt",num(item.watt));set("p_manut",num(item.manut));
+      $("pLeg").textContent="Editando impressora";$("pSave").textContent="Salvar alterações";$("pCancel").hidden=false;$("pSet").classList.add("editing");$("p_nome").focus()}
+    render(); return;
+  }
+  if(act==="del"){
+    if(armed!==b){
+      if(armed){armed.classList.remove("armed");armed.textContent="Excluir"}
+      armed=b;b.classList.add("armed");b.textContent="Confirmar";
+      clearTimeout(armTimer);armTimer=setTimeout(()=>{if(armed){armed.classList.remove("armed");armed.textContent="Excluir";armed=null}},3500);
+      return;
+    }
+    armed=null;clearTimeout(armTimer);b.disabled=true;
+    const msgId={fil:"fMsg",imp:"pMsg",ins:"iMsg",cli:"cMsg",orc:"hMsg"}[k];
+    try{await DB.collection({fil:"filamentos",imp:"impressoras",ins:"insumos",cli:"clientes",orc:"orcamentos"}[k]).doc(id).delete();if(k==="orc"&&curOrc===id){curOrc=null;showEditBar()}if(k==="cli"&&editCli===id)resetCli();if(k==="ins"&&editIns===id)resetIns();flash(msgId,`${item.nome||item.peca||"Item"} excluído.`);if(k==="fil"&&editFil===id)resetFil();if(k==="imp"&&editImp===id)resetImp()}
+    catch(err){flash(msgId,errText(err));b.disabled=false}
+  }
+});
+
+/* ---------- conexão com o cadastro ---------- */
+function offline(){
+  $("dbStatus").textContent="cadastro indisponível aqui · usando valores manuais";
+  ["fSave","pSave","iSave","cSave","saveOrc"].forEach(id=>$(id).disabled=true);
+  $("fEmpty").textContent=$("pEmpty").textContent=$("iEmpty").textContent=$("cEmpty").textContent=$("hEmpty").textContent="O cadastro não está disponível nesta visualização. Abra a página logado no claude.ai para cadastrar.";
+}
+fillSelects(); fillIns(); applyMat(); applyImp(); render(); renderFil(); renderImp(); renderIns(); renderCli(); renderHist();
+
+(async()=>{
+  const c=window.claude;
+  if(!c||typeof c.use!=="function"){offline();return}
+  let db=null; try{db=await c.use("db")}catch(e){}
+  if(!db){offline();return}
+  DB=db;
+  $("dbStatus").textContent="cadastro salvo na nuvem";$("dbStatus").classList.add("ok");
+  try{const s=await db.doc("config/oficina").get();if(s.exists){const o=s.data();applyCfg(o);lastCfg=JSON.stringify(o);fillSelects();applyMat();applyImp();render()}}catch(e){}
+  const sub=(col,cb)=>db.collection(col).orderBy("nome").onSnapshot(snap=>cb(snap.docs.map(d=>Object.assign({id:d.id},d.data()))),()=>{$("dbStatus").textContent="conexão com o cadastro perdida · recarregue a página";$("dbStatus").classList.remove("ok")});
+  sub("filamentos",docs=>{filamentos=docs;fillSelects();if($("mat").value.startsWith("db:")||!sel.mat)applyMat();render();renderFil()});
+  sub("impressoras",docs=>{impressoras=docs;fillSelects();applyImp();render();renderImp()});
+  db.collection("orcamentos").orderBy("criado","desc").limit(500).onSnapshot(snap=>{orcamentos=snap.docs.map(d=>Object.assign({id:d.id},d.data()));if(curOrc&&!orcamentos.some(o=>o.id===curOrc))curOrc=null;showEditBar();renderHist();renderCli()},()=>{});
+  sub("clientes",docs=>{clientes=docs;fillCli();render();renderCli();renderHist()});
+  sub("insumos",docs=>{insumos=docs;fillIns();render();renderIns()});
+})();
+</script>
+
+</body></html>
