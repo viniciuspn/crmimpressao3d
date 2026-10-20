@@ -185,3 +185,28 @@ export const camposConfiguracoes: GrupoCampos[] = [
     ],
   },
 ];
+
+// ---------- Clientes ----------
+
+export const clienteSchema = z.object({
+  nome: textoObrigatorio("Informe o nome"),
+  telefone: textoOpcional(40),
+  email: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() !== "" ? v.trim() : null),
+    z.email("E-mail inválido").max(200).nullable(),
+  ),
+  cidade: textoOpcional(),
+  observacoes: textoOpcional(2000),
+});
+
+export const camposCliente: GrupoCampos[] = [
+  {
+    campos: [
+      { nome: "nome", rotulo: "Nome", tipo: "texto", obrigatorio: true, inteiro: true },
+      { nome: "telefone", rotulo: "WhatsApp / telefone", tipo: "texto", ajuda: "Com DDD, para gerar o link do WhatsApp" },
+      { nome: "email", rotulo: "E-mail", tipo: "texto" },
+      { nome: "cidade", rotulo: "Cidade", tipo: "texto" },
+      { nome: "observacoes", rotulo: "Observações", tipo: "textarea", inteiro: true },
+    ],
+  },
+];

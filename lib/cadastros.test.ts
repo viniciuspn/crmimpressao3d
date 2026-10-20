@@ -127,3 +127,21 @@ describe("configuracoesSchema", () => {
     expect(dados).not.toHaveProperty("dados_iniciais_criados");
   });
 });
+
+describe("clienteSchema", () => {
+  it("aceita só o nome e transforma vazios em null", async () => {
+    const { clienteSchema } = await import("./cadastros");
+    expect(lerFormulario(clienteSchema, fd({ nome: " Ana ", telefone: "", email: "", cidade: "", observacoes: "" })).dados).toEqual({
+      nome: "Ana",
+      telefone: null,
+      email: null,
+      cidade: null,
+      observacoes: null,
+    });
+  });
+
+  it("recusa e-mail inválido", async () => {
+    const { clienteSchema } = await import("./cadastros");
+    expect(lerFormulario(clienteSchema, fd({ nome: "Ana", email: "ana@" })).erro?.erros?.email).toBeDefined();
+  });
+});

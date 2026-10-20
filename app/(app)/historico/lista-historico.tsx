@@ -7,31 +7,11 @@ import { caixaClass, controleClass, Formulario } from "@/components/formulario";
 import { Kpi } from "@/components/kpi";
 import { STATUS_ORCAMENTO, type StatusOrcamento } from "@/lib/dominio";
 import type { GrupoCampos } from "@/lib/form";
+import type { ItemHistorico } from "@/lib/historico";
 import { formatarBRL, formatarNumero } from "@/lib/formato";
 import { DIA_MS, indicadores, linkWhatsApp, mensagemFollowup, normalizarBusca, precisaFollowup } from "@/lib/orcamento";
 import { alterarStatus, excluirOrcamento, registrarEntrega } from "./actions";
 
-export type ItemHistorico = {
-  id: string;
-  criadoEm: string;
-  peca: string;
-  material: string;
-  quantidade: number;
-  pintado: boolean;
-  preco: number;
-  lucro: number;
-  status: StatusOrcamento;
-  statusAlteradoEm: string;
-  horasEstimadas: number | null;
-  gramasEstimadas: number | null;
-  horasReais: number | null;
-  gramasReais: number | null;
-  houveFalha: boolean | null;
-  observacao: string | null;
-  clienteId: string | null;
-  clienteNome: string | null;
-  clienteTelefone: string | null;
-};
 
 const ROTULO_STATUS: Record<StatusOrcamento, string> = {
   enviado: "Enviado",
@@ -80,9 +60,11 @@ type Props = {
   followupDias: number;
   clienteInicial: string;
   truncado: boolean;
+  /** Na página do cliente, a lista já vem filtrada. */
+  semFiltroCliente?: boolean;
 };
 
-export function ListaHistorico({ itens, clientes, followupDias, clienteInicial, truncado }: Props) {
+export function ListaHistorico({ itens, clientes, followupDias, clienteInicial, truncado, semFiltroCliente }: Props) {
   const [status, setStatus] = useState("");
   const [cliente, setCliente] = useState(clienteInicial);
   const [busca, setBusca] = useState("");
@@ -103,7 +85,7 @@ export function ListaHistorico({ itens, clientes, followupDias, clienteInicial, 
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-2.5 sm:grid-cols-[1fr_1fr_1.4fr]">
+      <div className={`grid gap-2.5 ${semFiltroCliente ? "sm:grid-cols-[1fr_1.4fr]" : "sm:grid-cols-[1fr_1fr_1.4fr]"}`}>
         <Filtro rotulo="Status">
           {(id) => (
             <select id={id} value={status} onChange={(e) => setStatus(e.target.value)} className={controleClass}>
@@ -114,6 +96,7 @@ export function ListaHistorico({ itens, clientes, followupDias, clienteInicial, 
             </select>
           )}
         </Filtro>
+        {!semFiltroCliente && (
         <Filtro rotulo="Cliente">
           {(id) => (
             <select id={id} value={cliente} onChange={(e) => setCliente(e.target.value)} className={controleClass}>
@@ -124,6 +107,7 @@ export function ListaHistorico({ itens, clientes, followupDias, clienteInicial, 
             </select>
           )}
         </Filtro>
+        )}
         <Filtro rotulo="Buscar">
           {(id) => (
             <input id={id} type="search" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Peça, cliente ou material" className={controleClass} />
