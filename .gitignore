@@ -41,3 +41,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 lib/database.types.tmp
+
+# SQL gerado para colar no SQL Editor
+aplicar-banco.sql
