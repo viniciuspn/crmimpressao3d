@@ -24,3 +24,6 @@ export type BaseInsumo = (typeof BASES_INSUMO)[number];
 
 export const STATUS_ORCAMENTO = ["enviado", "aprovado", "recusado", "entregue"] as const satisfies readonly Enums<"status_orcamento">[];
 export type StatusOrcamento = Enums<"status_orcamento">;
+
+export const TABELAS_CADASTRO = ["filamentos", "impressoras", "insumos"] as const;
+export type TabelaCadastro = (typeof TABELAS_CADASTRO)[number];
