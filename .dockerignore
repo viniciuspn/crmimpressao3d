@@ -9,3 +9,9 @@ npm-debug.log*
 coverage
 playwright-report
 test-results
+.claude
+docs
+prompt-ideia.md
+CLAUDE.md
+AGENTS.md
+README.md
