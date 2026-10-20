@@ -144,7 +144,7 @@ Se algo nesta especificação estiver errado ou for uma má ideia técnica, diga
 
 1. **Pintura:** `configuracoes` ganha `pintura_insumos_peca` (R$ por peça, `numeric(12,2)`, padrão 0) e `pintura_min_peca` (padrão 0). São preenchidos no orçamento, ajustáveis, e congelados em `parametros`. O insumo "Tinta" pode ser usado como linha de insumo **ou** embutido em `pintura_insumos_peca`, nunca nos dois (a tela avisa).
 2. **Extras avulsos:** campo único `extras_avulsos` (R$ por pedido) no orçamento, congelado em `parametros`.
-3. **Seu R$/hora:** horas trabalhadas = `(preparo_min + acabamento_min_peca × qtd + (pintado ? pintura_min_peca × qtd : 0)) / 60`. Sem horas de impressão.
+3. **Seu R$/hora:** horas trabalhadas = `(preparo_min + acabamento_min_peca × qtd + (pintado ? pintura_min_peca × qtd : 0)) / 60`. Sem horas de impressão. Numerador: mão de obra + mão de obra da pintura + lucro (o tempo de pintura está no denominador, então o valor dele também entra no numerador).
 4. **Seed:** `configuracoes` criada por trigger em `auth.users`; dados iniciais (K1C, PLA, ABS, Tinta) criados por action de primeiro acesso, não por `seed.sql`.
 5. **insumos.qtd_embalagem** é nullable; insumo sem quantidade não pode entrar em orçamento.
 6. **FKs de orcamentos** para filamento/impressora: `on delete restrict`.
@@ -157,3 +157,5 @@ Se algo nesta especificação estiver errado ou for uma má ideia técnica, diga
 13. **`configuracoes` protegida:** o usuário só faz `update` nas colunas de parâmetros. Insert e delete não são permitidos (a linha nasce pelo trigger), e `dados_iniciais_criados` não pode ser alterado. `criar_dados_iniciais()` é `security definer` e grava `user_id = auth.uid()`.
 14. **Tipos:** `lib/database.types.ts` é gerado (`npm run db:types`); valores de domínio (`TIPOS_FILAMENTO`, `UNIDADES_INSUMO`, `BASES_INSUMO`, `STATUS_ORCAMENTO`) ficam em `lib/dominio.ts`.
 15. **Testes de banco:** `tests/db/` aplica as migrações num Postgres 17 em memória (PGlite) com um stub do schema `auth` e testa RLS com dois usuários.
+16. **Margem real** = lucro ÷ custo total (markup), comparável à margem configurada. Só difere dela quando há taxa de pagamento, retorno ou pedido mínimo.
+17. **Números digitados:** vírgula é decimal; ponto em grupos de 3 ("1.000", "3.200") é milhar; demais pontos são decimais. Casas decimais acima do que a coluna guarda são recusadas, não arredondadas.
