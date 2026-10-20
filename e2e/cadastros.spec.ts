@@ -2,10 +2,6 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const sufixo = Date.now().toString(36);
 
-test.beforeEach(({ page }) => {
-  page.on("dialog", (d) => d.accept());
-});
-
 /** Abre o <details> cujo resumo contém o texto e devolve o bloco. */
 async function abrir(page: Page, texto: string): Promise<Locator> {
   const bloco = page.locator("details", { has: page.locator("summary", { hasText: texto }) }).first();
@@ -42,10 +38,11 @@ test("filamento: cadastrar com vírgula e milhar, erro sem perder o digitado, ex
 
   await edicao.getByLabel("Preço do rolo").fill("120");
   await edicao.getByRole("button", { name: "Salvar" }).click();
-  await expect(edicao.getByRole("status")).toHaveText("Filamento atualizado");
+  await expect(edicao.getByText("Filamento atualizado")).toBeVisible();
   await expect(item).toContainText("R$ 130,00/kg");
 
   await edicao.getByRole("button", { name: "Excluir" }).click();
+  await page.getByRole("button", { name: "Confirmar" }).click();
   await expect(page.locator("li", { hasText: nome })).toHaveCount(0);
 });
 
@@ -64,12 +61,13 @@ test("filamento sem cor continua sem cor depois de editar", async ({ page }) => 
   await expect(edicao.getByLabel("Sem cor")).toBeChecked();
   await edicao.getByLabel("Preço do rolo").fill("101");
   await edicao.getByRole("button", { name: "Salvar" }).click();
-  await expect(edicao.getByRole("status")).toHaveText("Filamento atualizado");
+  await expect(edicao.getByText("Filamento atualizado")).toBeVisible();
 
   await page.reload();
   const depois = await abrir(page, nome);
   await expect(depois.getByLabel("Sem cor")).toBeChecked();
   await depois.getByRole("button", { name: "Excluir" }).click();
+  await page.getByRole("button", { name: "Confirmar" }).click();
   await expect(page.locator("li", { hasText: nome })).toHaveCount(0);
 });
 
@@ -84,6 +82,7 @@ test("impressora e insumo: cadastrar e excluir", async ({ page }) => {
   await novo.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.locator("li", { hasText: impressora })).toContainText("depreciação R$ 0,5333/h");
   await (await abrir(page, impressora)).getByRole("button", { name: "Excluir" }).click();
+  await page.getByRole("button", { name: "Confirmar" }).click();
   await expect(page.locator("li", { hasText: impressora })).toHaveCount(0);
 
   await page.goto("/cadastros?aba=insumos");
@@ -100,6 +99,7 @@ test("impressora e insumo: cadastrar e excluir", async ({ page }) => {
   await edicao.getByRole("button", { name: "Salvar" }).click();
   await expect(page.locator("li", { hasText: insumo })).toContainText("R$ 0,0009/ml");
   await edicao.getByRole("button", { name: "Excluir" }).click();
+  await page.getByRole("button", { name: "Confirmar" }).click();
   await expect(page.locator("li", { hasText: insumo })).toHaveCount(0);
 });
 

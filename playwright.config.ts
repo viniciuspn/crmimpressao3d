@@ -20,7 +20,8 @@ export default defineConfig({
     locale: "pt-BR",
   },
   projects: [
-    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    { name: "setup", testMatch: /auth\.setup\.ts/, teardown: "limpeza" },
+    { name: "limpeza", testMatch: /limpeza\.teardown\.ts/ },
     {
       name: "celular",
       use: { ...devices["Pixel 7"], storageState: "e2e/.auth/usuario.json" },
