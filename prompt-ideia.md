@@ -153,3 +153,7 @@ Se algo nesta especificação estiver errado ou for uma má ideia técnica, diga
 9. **Next.js 16:** renovação de sessão em `proxy.ts` (antigo `middleware.ts`).
 10. **Docker/Coolify:** `NEXT_PUBLIC_*` entram como `ARG` de build; no Coolify, marcar como build variable.
 11. **Agentes e skills:** definidos em `.claude/agents/` (database-architect, test-engineer, security-auditor, code-reviewer) e `.claude/skills/fechar-fase/` (checklist de fim de fase). Mapa do código com o skill **cartographer** ao fim de cada fase.
+12. **`parametros` é a fonte do recálculo:** guarda todas as entradas em precisão total, inclusive `extras_avulsos`, `pintura_insumos_peca` e `pintura_min_peca`, que não têm coluna própria. As colunas de descrição do orçamento servem para listar e filtrar. "Atualizar" um orçamento recalcula a partir das entradas do formulário, nunca das colunas arredondadas.
+13. **`configuracoes` protegida:** o usuário só faz `update` nas colunas de parâmetros. Insert e delete não são permitidos (a linha nasce pelo trigger), e `dados_iniciais_criados` não pode ser alterado. `criar_dados_iniciais()` é `security definer` e grava `user_id = auth.uid()`.
+14. **Tipos:** `lib/database.types.ts` é gerado (`npm run db:types`); valores de domínio (`TIPOS_FILAMENTO`, `UNIDADES_INSUMO`, `BASES_INSUMO`, `STATUS_ORCAMENTO`) ficam em `lib/dominio.ts`.
+15. **Testes de banco:** `tests/db/` aplica as migrações num Postgres 17 em memória (PGlite) com um stub do schema `auth` e testa RLS com dois usuários.
