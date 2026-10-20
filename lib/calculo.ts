@@ -75,6 +75,8 @@ export type ResultadoCalculo = {
   meta_h: number;
   retorno: number;
   preco: number;
+  /** Preço antes do pedido mínimo. */
+  preco_calculado: number;
   preco_por_peca: number;
   lucro: number;
   /** lucro ÷ preço (quanto do que o cliente paga fica com você); null se o preço for 0. */
@@ -168,6 +170,7 @@ export function calcular(e: EntradaCalculo): ResultadoCalculo {
     meta_h,
     retorno,
     preco,
+    preco_calculado,
     preco_por_peca: preco / e.quantidade,
     lucro,
     margem_real: preco > 0 ? lucro / preco : null,

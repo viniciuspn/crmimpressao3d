@@ -4,6 +4,18 @@ export function formatarBRL(valor: number) {
   return brl.format(valor);
 }
 
+const custoUnitario = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 4,
+});
+
+/** Custos unitários pequenos precisam de mais casas (ex.: R$ 0,0009/ml). */
+export function formatarCustoUnitario(valor: number) {
+  return custoUnitario.format(valor);
+}
+
 export function formatarNumero(valor: number, casas = 2) {
   return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: casas }).format(valor);
 }
