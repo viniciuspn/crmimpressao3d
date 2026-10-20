@@ -1,13 +1,13 @@
 ---
-last_mapped: 2026-10-20T03:22:03Z
-total_files: 82
-total_tokens: 78000
-phase: 5
+last_mapped: 2026-10-20T03:39:09Z
+total_files: 96
+total_tokens: 98000
+phase: 6
 ---
 
 # Mapa do código
 
-> Gerado pelo Cartographer. Último mapeamento: 2026-10-20T03:22:03Z (fim da fase 5, Orçamento e histórico).
+> Gerado pelo Cartographer. Último mapeamento: 2026-10-20T03:39:09Z (fim da fase 6, Clientes, calibração e exportação).
 
 **Ideia** (crmimpressao3d) é um sistema de orçamentos e clientes para uma oficina de impressão 3D, usado por uma só pessoa. A especificação completa está em [prompt-ideia.md](../prompt-ideia.md). A seção 9 dela registra as decisões tomadas depois da revisão.
 
@@ -51,6 +51,11 @@ tests/db/
   supabase-stub.ts        PGlite + stub de auth (auth.uid, anon, authenticated, supabase_auth_admin)
   migracoes.test.ts       RLS entre 2 usuários, FKs, triggers, permissões de configuracoes
 lib/
+  calibracao.ts           calibrar(): desvios, falha real por mesa, sugestões de taxa de falha e desperdício
+  clientes.ts             resumirPorCliente()
+  historico.ts            carregarHistorico() (server-only) usado em /historico e /clientes/[id]
+  exportar.ts             gerarPlanilha() com exceljs
+  paginar.ts              todasAsPaginas(): contorna o limite de 1000 linhas do PostgREST
   orcamento.ts            schema da entrada do editor, genéricos, texto do WhatsApp, link wa.me, follow-up, indicadores
   calculo.ts              regra de preço (função pura) + precoPorKg, custoPorUnidade, arredondar2
   cadastros.ts            schemas Zod + campos de filamentos, impressoras, insumos e configurações
@@ -72,7 +77,9 @@ app/
   (app)/historico/        lista com filtros/indicadores, status otimista, follow-up, entrega, excluir
   (app)/cadastros/        abas filamentos/impressoras/insumos (?aba=), edição inline, actions salvar/excluir
   (app)/configuracoes/    parâmetros da oficina (update só nas colunas permitidas)
-  (app)/*/page.tsx        clientes e calibração: provisórias (EmBreve) até a fase 6
+  (app)/clientes/         lista com busca e resumo; [id]/ página do cliente com o histórico dele
+  (app)/calibracao/       relatório estimado × real e "Aplicar sugestão"
+  api/exportar/route.ts   GET → backup .xlsx (sessão + RLS, paginado)
   api/health/route.ts     GET → {status:"ok"}
 components/
   formulario.tsx          formulário genérico (campos descritos em lib/cadastros.ts), useActionState via onSubmit
@@ -172,6 +179,9 @@ sequenceDiagram
 
 ## Pegadinhas
 
+- **Consultas para totais precisam de `todasAsPaginas`**: o PostgREST corta em 1000 linhas sem avisar.
+- A calibração usa os valores congelados em `parametros.entrada` (taxa de falha, desperdício) e `detalhamento` (horas, gramas, mesas), não a configuração atual.
+
 - **`salvar_orcamento` com `p_id` nulo precisa da chave no JSON** (`p_id: null`). Sem ela o PostgREST não encontra a função (PGRST202).
 - Reabrir um orçamento usa `parametros.entrada`, mas `cliente_id` e `insumo_id` são reconciliados com o banco (podem ter sido apagados).
 - `useOptimistic` no status do histórico: o valor volta ao do servidor quando a action termina.
@@ -208,4 +218,5 @@ sequenceDiagram
 | Mudar o schema | nova migração em `supabase/migrations/` (nunca editar uma já aplicada), teste em `tests/db/`, `npm run db:push` e `npm run db:types` |
 | Novo valor de domínio | CHECK na migração + `lib/dominio.ts` |
 | Novo cadastro/formulário | schema + campos em `lib/cadastros.ts`, action com `lerFormulario`, `<Formulario>` na página, teste em `lib/cadastros.test.ts` e E2E |
+| Novo dado no backup | já sai automaticamente (select * por tabela em `ABAS_EXPORTACAO`); tabela nova → adicionar em `lib/exportar.ts` |
 | Mudar o cálculo | `lib/calculo.ts` + `lib/calculo.test.ts` (os casos A, B e C não podem mudar) |
