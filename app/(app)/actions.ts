@@ -86,7 +86,9 @@ export async function salvarOrcamento(id: string | null, entrada: unknown): Prom
   }));
 
   const { data: novoId, error } = await supabase.rpc("salvar_orcamento", {
-    p_id: id ?? undefined,
+    // null explícito (orçamento novo): sem a chave, o PostgREST não encontra a função.
+    // O tipo gerado não aceita null porque o parâmetro SQL não tem default.
+    p_id: id as string,
     p_dados: dados,
     p_insumos: insumos,
   });

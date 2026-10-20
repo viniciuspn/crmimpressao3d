@@ -9,7 +9,7 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "db:types": "npx supabase@2.121.0 gen types typescript --linked --schema public > lib/database.types.tmp && node -e \"require('fs').renameSync('lib/database.types.tmp','lib/database.types.ts')\"",
+    "db:types": "npx supabase@2.121.0 gen types typescript --project-id venvaaxtjhonpbvujmbf --schema public > lib/database.types.tmp && node -e \"require('fs').renameSync('lib/database.types.tmp','lib/database.types.ts')\"",
     "db:push": "npx supabase@2.121.0 db push"
   },
   "dependencies": {
