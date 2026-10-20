@@ -129,9 +129,9 @@ function CampoFormulario({
     controle = (
       <input
         {...comum}
-        type="text"
-        inputMode={campo.tipo === "decimal" ? "decimal" : campo.tipo === "inteiro" ? "numeric" : undefined}
-        autoComplete="off"
+        type={campo.entrada ?? "text"}
+        inputMode={campo.tipo === "decimal" ? "decimal" : campo.tipo === "inteiro" ? "numeric" : campo.entrada}
+        autoComplete={campo.entrada ?? "off"}
         defaultValue={numerico ? numeroParaCampo(valor as number | null) : String(valor ?? "")}
         className={numerico ? `${controleClass} font-mono tabular-nums` : controleClass}
       />

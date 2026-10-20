@@ -98,6 +98,6 @@ export async function salvarOrcamento(id: string | null, entrada: unknown): Prom
   }
 
   revalidatePath("/historico");
-  revalidatePath("/clientes");
+  revalidatePath("/clientes", "layout");
   return { ok: true, id: novoId, mensagem: id ? "Orçamento atualizado" : "Orçamento salvo no histórico" };
 }

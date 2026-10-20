@@ -37,7 +37,7 @@ test.describe.serial("orçamento → histórico", () => {
     await expect(c).toContainText("PLA · 3 pç");
 
     await c.getByLabel("Status").selectOption("aprovado");
-    await page.waitForLoadState("networkidle");
+    await page.waitForResponse((r) => r.request().method() === "POST");
     await page.reload();
     await expect(cartao(page).getByLabel("Status")).toHaveValue("aprovado");
 

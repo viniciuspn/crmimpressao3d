@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import { clienteSchema } from "@/lib/cadastros";
 import { lerFormulario, mensagemErroBanco, type EstadoAcao } from "@/lib/form";
@@ -30,13 +29,12 @@ export async function salvarCliente(id: string | null, _e: EstadoAcao, fd: FormD
 }
 
 /** Os orçamentos do cliente continuam no histórico, sem cliente (FK on delete set null). */
-export async function excluirCliente(id: string, voltarParaLista = false): Promise<EstadoAcao> {
+export async function excluirCliente(id: string): Promise<EstadoAcao> {
   const { supabase } = await requireUser();
   if (!idSchema.safeParse(id).success) return { erro: "Cliente inválido" };
   const { data, error } = await supabase.from("clientes").delete().eq("id", id).select("id");
   if (error) return { erro: mensagemErroBanco(error) };
   if (!data.length) return { erro: "Cliente não encontrado. Recarregue a página." };
   revalidar();
-  if (voltarParaLista) redirect("/clientes");
   return { ok: true, mensagem: "Cliente excluído; os orçamentos dele ficaram sem cliente" };
 }

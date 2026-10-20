@@ -24,7 +24,7 @@ export default async function ConfiguracoesPage() {
           <p className="font-semibold">Backup</p>
           <p className="text-sm text-muted">Planilha .xlsx com uma aba por tabela: cadastros, clientes e orçamentos.</p>
         </div>
-        <a href="/api/exportar" download className="rounded bg-accent px-3.5 py-2 text-sm font-semibold text-accent-ink">
+        <a href="/api/exportar" className="rounded bg-accent px-3.5 py-2 text-sm font-semibold text-accent-ink">
           Exportar .xlsx
         </a>
         <Link href="/calibracao" className="rounded border border-line px-3.5 py-2 text-sm font-semibold">

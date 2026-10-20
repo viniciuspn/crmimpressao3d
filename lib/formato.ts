@@ -16,6 +16,11 @@ export function formatarCustoUnitario(valor: number) {
   return custoUnitario.format(valor);
 }
 
+/** "1 orçamento", "2 orçamentos". */
+export function plural(n: number, singular: string, pluralForma = `${singular}s`) {
+  return `${n} ${n === 1 ? singular : pluralForma}`;
+}
+
 export function formatarNumero(valor: number, casas = 2) {
   return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: casas }).format(valor);
 }

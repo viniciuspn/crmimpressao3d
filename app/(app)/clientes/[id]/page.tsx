@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { Kpi } from "@/components/kpi";
 import { carregarHistorico } from "@/lib/historico";
-import { formatarBRL } from "@/lib/formato";
-import { indicadores, linkWhatsApp } from "@/lib/orcamento";
+import { linkWhatsApp } from "@/lib/orcamento";
 import { requireUser } from "@/lib/supabase/server";
 import { ListaHistorico } from "../../historico/lista-historico";
 
@@ -22,7 +20,6 @@ export default async function ClientePage({ params }: PageProps<"/clientes/[id]"
   if (!c) notFound();
 
   const whatsapp = linkWhatsApp(c.telefone);
-  const ind = indicadores(historico.itens);
 
   return (
     <section className="space-y-5">
@@ -41,17 +38,10 @@ export default async function ClientePage({ params }: PageProps<"/clientes/[id]"
               Abrir WhatsApp
             </a>
           )}
-          <Link href="/" className="rounded border border-line px-3 py-1.5 text-sm font-semibold">
+          <Link href={`/?cliente=${c.id}`} className="rounded border border-line px-3 py-1.5 text-sm font-semibold">
             Novo orçamento
           </Link>
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Kpi rotulo="Orçamentos" valor={String(ind.quantidade)} />
-        <Kpi rotulo="Aprovação" valor={ind.taxaAprovacao === null ? "—" : `${Math.round(ind.taxaAprovacao * 100)}%`} />
-        <Kpi rotulo="Fechado" valor={formatarBRL(ind.valorFechado)} />
-        <Kpi rotulo="Lucro estimado" valor={formatarBRL(ind.lucroEstimado)} />
       </div>
 
       <h2 className="text-lg font-semibold">Orçamentos</h2>

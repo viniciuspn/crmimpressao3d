@@ -6,51 +6,75 @@ export type Entrega = {
   gramasEstimadas: number | null;
   gramasReais: number | null;
   houveFalha: boolean | null;
-  /** Desperdício (%) usado no orçamento; as gramas estimadas já o incluem. */
+  /** Mesas do orçamento: uma falha perde ~1 mesa, então a taxa real é falhas ÷ mesas. */
+  mesas: number | null;
+  /** Valores congelados no orçamento (as gramas estimadas já incluem o desperdício). */
   desperdicioUsado: number | null;
+  taxaFalhaUsada: number | null;
 };
 
 /** Abaixo disso, o relatório mostra os números mas não sugere ajuste. */
 export const AMOSTRA_MINIMA = 5;
 /**
- * Peso (em trabalhos) da taxa atual na sugestão: com poucos dados, 1 falha em 3 não vira 33%.
- * sugestão = (falhas + taxa_atual × PESO) ÷ (entregas com resposta + PESO)
+ * Peso (em mesas) da taxa usada nos orçamentos: com poucos dados, 1 falha em 3 mesas não vira 33%.
+ * sugestão = (falhas + taxa_usada × PESO) ÷ (mesas + PESO)
  */
-export const PESO_TAXA_ATUAL = 10;
+export const PESO_TAXA_USADA = 10;
+/** Diferenças menores que isso (pontos percentuais) não viram sugestão. */
+const DIFERENCA_MINIMA = 0.5;
 
-const media = (v: number[]) => (v.length ? v.reduce((s, x) => s + x, 0) / v.length : null);
 const arred1 = (v: number) => Math.round(v * 10) / 10;
+const soma = (v: number[]) => v.reduce((s, x) => s + x, 0);
+const media = (v: number[]) => (v.length ? soma(v) / v.length : null);
+const temReal = (e: Entrega) => (e.horasReais ?? 0) > 0 || (e.gramasReais ?? 0) > 0;
 
 export function calibrar(entregas: Entrega[], taxaFalhaAtual: number, desperdicioAtual: number) {
-  const comHoras = entregas.filter((e) => e.horasEstimadas && e.horasEstimadas > 0 && e.horasReais !== null);
-  const comGramas = entregas.filter((e) => e.gramasEstimadas && e.gramasEstimadas > 0 && e.gramasReais !== null);
-  const comFalha = entregas.filter((e) => e.houveFalha !== null);
+  // Desvios e desperdício só com entregas sem falha: a reimpressão já é coberta pela taxa de falha.
+  const semFalha = entregas.filter((e) => e.houveFalha !== true);
+  const comHoras = semFalha.filter((e) => (e.horasEstimadas ?? 0) > 0 && (e.horasReais ?? 0) > 0);
+  const comGramas = semFalha.filter((e) => (e.gramasEstimadas ?? 0) > 0 && (e.gramasReais ?? 0) > 0);
+
+  // Razão das somas (ponderada pelo tamanho do trabalho): um chaveiro errado não distorce tudo.
+  const desvioHoras = comHoras.length
+    ? soma(comHoras.map((e) => e.horasReais!)) / soma(comHoras.map((e) => e.horasEstimadas!)) - 1
+    : null;
+  const desvioGramas = comGramas.length
+    ? soma(comGramas.map((e) => e.gramasReais!)) / soma(comGramas.map((e) => e.gramasEstimadas!)) - 1
+    : null;
+
+  // Falha: só entregas registradas de verdade (com horas ou gramas reais), contadas por mesa.
+  const comFalha = entregas.filter((e) => e.houveFalha !== null && temReal(e));
   const falhas = comFalha.filter((e) => e.houveFalha).length;
+  const mesas = soma(comFalha.map((e) => Math.max(1, e.mesas ?? 1)));
+  const taxaFalhaReal = mesas ? falhas / mesas : null;
 
-  // Desvio relativo médio: +0,10 = real 10% acima do estimado.
-  const desvioHoras = media(comHoras.map((e) => e.horasReais! / e.horasEstimadas! - 1));
-  const desvioGramas = media(comGramas.map((e) => e.gramasReais! / e.gramasEstimadas! - 1));
-
-  const taxaFalhaReal = comFalha.length ? falhas / comFalha.length : null;
-  const taxaFalhaSugerida =
+  // Base fixa: a taxa usada nos próprios orçamentos (não a configuração atual), para a sugestão não
+  // mudar a cada vez que é aplicada.
+  const taxaBase = media(comFalha.flatMap((e) => (e.taxaFalhaUsada === null ? [] : [e.taxaFalhaUsada]))) ?? taxaFalhaAtual;
+  const taxaCalculada =
     comFalha.length >= AMOSTRA_MINIMA
-      ? arred1(((falhas + (taxaFalhaAtual / 100) * PESO_TAXA_ATUAL) / (comFalha.length + PESO_TAXA_ATUAL)) * 100)
+      ? arred1(((falhas + (taxaBase / 100) * PESO_TAXA_USADA) / (mesas + PESO_TAXA_USADA)) * 100)
       : null;
 
-  // Desperdício que teria acertado as gramas: (1 + desperdício usado) × real/estimado − 1, em média.
-  const desperdicioSugerido =
+  // Desperdício que teria acertado as gramas: (1 + desperdício usado) × real ÷ estimado − 1, ponderado.
+  const desperdicioCalculado =
     comGramas.length >= AMOSTRA_MINIMA
-      ? Math.max(
-          0,
-          arred1(
-            media(
-              comGramas.map(
-                (e) => ((1 + (e.desperdicioUsado ?? desperdicioAtual) / 100) * e.gramasReais!) / e.gramasEstimadas! - 1,
-              ),
-            )! * 100,
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            arred1(
+              (soma(comGramas.map((e) => (1 + (e.desperdicioUsado ?? desperdicioAtual) / 100) * e.gramasReais!)) /
+                soma(comGramas.map((e) => e.gramasEstimadas!)) -
+                1) *
+                100,
+            ),
           ),
         )
       : null;
+
+  const diferente = (sugestao: number | null, atual: number) =>
+    sugestao !== null && Math.abs(sugestao - atual) >= DIFERENCA_MINIMA ? sugestao : null;
 
   return {
     entregas: entregas.length,
@@ -58,11 +82,16 @@ export function calibrar(entregas: Entrega[], taxaFalhaAtual: number, desperdici
     comGramas: comGramas.length,
     comFalha: comFalha.length,
     falhas,
+    mesas,
     desvioHoras,
     desvioGramas,
     taxaFalhaReal,
-    taxaFalhaSugerida: taxaFalhaSugerida !== null && taxaFalhaSugerida !== arred1(taxaFalhaAtual) ? taxaFalhaSugerida : null,
-    desperdicioSugerido:
-      desperdicioSugerido !== null && desperdicioSugerido !== arred1(desperdicioAtual) ? desperdicioSugerido : null,
+    taxaBase,
+    /** Calculada (pode ser igual à atual); null com amostra pequena. */
+    taxaFalhaCalculada: taxaCalculada,
+    desperdicioCalculado,
+    /** Só quando difere da configuração atual. */
+    taxaFalhaSugerida: diferente(taxaCalculada, taxaFalhaAtual),
+    desperdicioSugerido: diferente(desperdicioCalculado, desperdicioAtual),
   };
 }

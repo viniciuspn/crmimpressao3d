@@ -12,7 +12,7 @@ function concluir(resposta: { data: { id: string }[] | null; error: { code?: str
   if (resposta.error) return { erro: mensagemErroBanco(resposta.error) };
   if (!resposta.data?.length) return { erro: "Orçamento não encontrado. Recarregue a página." };
   revalidatePath("/historico");
-  revalidatePath("/clientes");
+  revalidatePath("/clientes", "layout");
   return { ok: true, mensagem };
 }
 

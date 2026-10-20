@@ -10,7 +10,7 @@ const parametrosSchema = z.object({
 });
 
 export default async function OrcamentoPage({ searchParams }: PageProps<"/">) {
-  const { id: idParam, novo, salvo } = await searchParams;
+  const { id: idParam, novo, salvo, cliente } = await searchParams;
   const id = typeof idParam === "string" && z.uuid().safeParse(idParam).success ? idParam : null;
   const idInvalido = idParam !== undefined && id === null;
   const { supabase } = await requireUser();
@@ -90,6 +90,7 @@ export default async function OrcamentoPage({ searchParams }: PageProps<"/">) {
         clientes={clientes.data ?? []}
         orcamento={orcamento}
         mensagemInicial={salvo === "1" && orcamento ? "Orçamento salvo no histórico" : null}
+        clienteInicial={typeof cliente === "string" ? cliente : undefined}
       />
     </section>
   );

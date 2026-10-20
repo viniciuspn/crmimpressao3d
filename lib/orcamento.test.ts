@@ -69,6 +69,7 @@ describe("linkWhatsApp", () => {
     ["(31) 99999-0000", "https://wa.me/5531999990000"],
     ["31 3333-4444", "https://wa.me/553133334444"],
     ["+55 31 99999-0000", "https://wa.me/5531999990000"],
+    ["031 99999-0000", "https://wa.me/5531999990000"],
   ])("%s", (tel, link) => {
     expect(linkWhatsApp(tel)).toBe(link);
   });

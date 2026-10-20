@@ -35,7 +35,7 @@ test.describe.serial("clientes, calibração e exportação", () => {
     await expect(page.getByText("Orçamento salvo no histórico")).toBeVisible();
 
     await page.goto("/clientes");
-    await expect(itemCliente(page)).toContainText("1 orçamento(s) · 0 fechado(s)");
+    await expect(itemCliente(page)).toContainText("1 orçamento · 0 fechados");
 
     await itemCliente(page).locator("summary").click();
     await itemCliente(page).getByRole("link", { name: "Ver histórico" }).click();
@@ -43,10 +43,10 @@ test.describe.serial("clientes, calibração e exportação", () => {
     const cartao = page.getByTestId("orcamento").filter({ hasText: peca });
     await expect(cartao).toBeVisible();
     await cartao.getByLabel("Status").selectOption("aprovado");
-    await page.waitForLoadState("networkidle");
+    await page.waitForResponse((r) => r.request().method() === "POST");
 
     await page.goto("/clientes");
-    await expect(itemCliente(page)).toContainText(/1 fechado\(s\) · R\$\s83,37/);
+    await expect(itemCliente(page)).toContainText(/1 fechado · R\$\s83,37/);
   });
 
   test("exporta o backup .xlsx com uma aba por tabela", async ({ page }) => {

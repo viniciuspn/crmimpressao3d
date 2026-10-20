@@ -6,7 +6,7 @@ import { BotaoExcluir } from "@/components/botao-excluir";
 import { caixaClass, controleClass, Formulario } from "@/components/formulario";
 import { camposCliente } from "@/lib/cadastros";
 import type { ResumoCliente } from "@/lib/clientes";
-import { formatarBRL } from "@/lib/formato";
+import { formatarBRL, plural } from "@/lib/formato";
 import { linkWhatsApp, normalizarBusca } from "@/lib/orcamento";
 import { excluirCliente, salvarCliente } from "./actions";
 
@@ -25,8 +25,12 @@ export function ListaClientes({ clientes }: { clientes: ClienteLista[] }) {
   const visiveis = useMemo(() => {
     const q = normalizarBusca(busca.trim());
     if (!q) return clientes;
-    return clientes.filter((c) =>
-      [c.nome, c.telefone, c.cidade, c.email].some((v) => normalizarBusca(v).includes(q)),
+    const digitos = q.replace(/\D/g, "");
+    return clientes.filter(
+      (c) =>
+        [c.nome, c.telefone, c.cidade, c.email].some((v) => normalizarBusca(v).includes(q)) ||
+        // "31999990000" encontra "(31) 99999-0000"
+        (digitos.length >= 4 && (c.telefone ?? "").replace(/\D/g, "").includes(digitos)),
     );
   }, [clientes, busca]);
 
@@ -73,7 +77,7 @@ export function ListaClientes({ clientes }: { clientes: ClienteLista[] }) {
                     </span>
                     <span className="block text-xs text-muted">
                       {c.resumo.orcamentos
-                        ? `${c.resumo.orcamentos} orçamento(s) · ${c.resumo.fechados} fechado(s) · ${formatarBRL(c.resumo.valorFechado)}`
+                        ? `${plural(c.resumo.orcamentos, "orçamento")} · ${plural(c.resumo.fechados, "fechado")} · ${formatarBRL(c.resumo.valorFechado)}`
                         : "Sem orçamentos"}
                     </span>
                   </span>
@@ -97,7 +101,7 @@ export function ListaClientes({ clientes }: { clientes: ClienteLista[] }) {
                   />
                   <div className="border-t border-line pt-3">
                     <BotaoExcluir
-                      acao={excluirCliente.bind(null, c.id, false)}
+                      acao={excluirCliente.bind(null, c.id)}
                       aviso="Toque de novo para excluir. Os orçamentos dele continuam no histórico, sem cliente."
                     />
                   </div>

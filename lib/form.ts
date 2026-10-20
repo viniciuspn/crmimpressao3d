@@ -96,6 +96,8 @@ export type Campo = {
   prefixo?: string;
   ajuda?: string;
   obrigatorio?: boolean;
+  /** Teclado e preenchimento automático no celular. */
+  entrada?: "tel" | "email";
   /** Ocupa a linha inteira no grid de 2 colunas. */
   inteiro?: boolean;
 };

@@ -60,6 +60,8 @@ type Props = {
   clientes: ClienteOpcao[];
   orcamento: OrcamentoAberto | null;
   mensagemInicial?: string | null;
+  /** Pré-seleciona o cliente num orçamento novo (vindo da página do cliente). */
+  clienteInicial?: string;
 };
 
 // ---------- Estado do formulário (textos como digitados) ----------
@@ -87,7 +89,7 @@ type Estado = {
   linhas: LinhaInsumoOrcamento[];
 } & Record<CampoNumerico, string>;
 
-function estadoInicial({ config, filamentos, impressoras, orcamento }: Props): Estado {
+function estadoInicial({ config, filamentos, impressoras, orcamento, clientes, clienteInicial }: Props): Estado {
   if (orcamento) {
     const e = orcamento.entrada;
     const numeros = Object.fromEntries(CAMPOS_NUMERICOS.map((c) => [c, numeroParaCampo(e[c])])) as Record<CampoNumerico, string>;
@@ -108,7 +110,7 @@ function estadoInicial({ config, filamentos, impressoras, orcamento }: Props): E
   const n = numeroParaCampo;
   return {
     peca: "",
-    clienteId: "",
+    clienteId: clientes.some((c) => c.id === clienteInicial) ? clienteInicial! : "",
     filamento: f ? `db:${f.id}` : "gen:PLA",
     impressoraId: imp?.id ?? "",
     pintado: false,

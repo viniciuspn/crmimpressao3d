@@ -143,7 +143,8 @@ export function textoOrcamento(d: {
 
 /** Link wa.me quando o telefone tem DDD (10 ou 11 dígitos, ou já com 55). Null se não der. */
 export function linkWhatsApp(telefone: string | null | undefined, mensagem?: string) {
-  let digitos = String(telefone ?? "").replace(/\D/g, "");
+  // Tira o zero de operadora/DDD ("031 99999-0000" → "3199999000").
+  let digitos = String(telefone ?? "").replace(/\D/g, "").replace(/^0+/, "");
   if (digitos.length === 10 || digitos.length === 11) digitos = `55${digitos}`;
   if (!/^55\d{10,11}$/.test(digitos)) return null;
   return `https://wa.me/${digitos}${mensagem ? `?text=${encodeURIComponent(mensagem)}` : ""}`;

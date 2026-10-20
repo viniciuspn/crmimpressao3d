@@ -203,8 +203,8 @@ export const camposCliente: GrupoCampos[] = [
   {
     campos: [
       { nome: "nome", rotulo: "Nome", tipo: "texto", obrigatorio: true, inteiro: true },
-      { nome: "telefone", rotulo: "WhatsApp / telefone", tipo: "texto", ajuda: "Com DDD, para gerar o link do WhatsApp" },
-      { nome: "email", rotulo: "E-mail", tipo: "texto" },
+      { nome: "telefone", rotulo: "WhatsApp / telefone", tipo: "texto", entrada: "tel", ajuda: "Com DDD, para gerar o link do WhatsApp" },
+      { nome: "email", rotulo: "E-mail", tipo: "texto", entrada: "email" },
       { nome: "cidade", rotulo: "Cidade", tipo: "texto" },
       { nome: "observacoes", rotulo: "Observações", tipo: "textarea", inteiro: true },
     ],
