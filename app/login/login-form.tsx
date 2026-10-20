@@ -4,7 +4,7 @@ import { startTransition, useActionState } from "react";
 import { entrar, type LoginState } from "./actions";
 
 const inputClass =
-  "mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 focus:border-teal-600 focus:outline-none";
+  "mt-1 w-full rounded border border-line bg-bg px-3 py-2 text-base text-ink outline-none focus:border-accent focus:ring-2 focus:ring-soft";
 
 export function LoginForm() {
   const [state, action, pending] = useActionState<LoginState, FormData>(entrar, {});
@@ -34,14 +34,14 @@ export function LoginForm() {
         />
       </label>
       {state.erro && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-danger">
           {state.erro}
         </p>
       )}
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-lg bg-teal-700 py-2.5 font-medium text-white hover:bg-teal-800 disabled:opacity-60"
+        className="w-full rounded bg-accent py-2.5 font-semibold text-accent-ink hover:opacity-90 disabled:opacity-60"
       >
         {pending ? "Entrando…" : "Entrar"}
       </button>

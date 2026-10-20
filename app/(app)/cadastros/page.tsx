@@ -27,16 +27,16 @@ export default async function CadastrosPage({ searchParams }: PageProps<"/cadast
 
   return (
     <section className="space-y-5">
-      <h1 className="text-2xl font-semibold">Cadastros</h1>
+      <h1 className="text-3xl font-extrabold tracking-tight">Cadastros</h1>
 
-      <nav className="flex gap-1 rounded-xl bg-zinc-100 p-1" aria-label="Tipo de cadastro">
+      <nav className="flex gap-1 rounded-xl bg-soft p-1" aria-label="Tipo de cadastro">
         {ABAS.map((a) => (
           <Link
             key={a.id}
             href={`/cadastros?aba=${a.id}`}
             aria-current={a.id === aba.id ? "page" : undefined}
             className={`flex-1 rounded-lg px-3 py-2 text-center text-sm ${
-              a.id === aba.id ? "bg-white font-medium shadow-sm" : "text-zinc-600"
+              a.id === aba.id ? "bg-panel font-medium shadow-sm" : "text-muted"
             }`}
           >
             {a.rotulo}
@@ -116,7 +116,7 @@ async function Insumos() {
           ativo: i.ativo,
           detalhe:
             custo === null ? (
-              <span className="text-amber-700">Preencha a quantidade na embalagem</span>
+              <span className="text-warn">Preencha a quantidade na embalagem</span>
             ) : (
               `${formatarBRL(i.preco_pago)} · ${formatarCusto(custo)}/${i.unidade}`
             ),
@@ -167,26 +167,26 @@ function Lista({
 }) {
   return (
     <div className="space-y-3">
-      <details className="group rounded-xl border border-dashed border-teal-300 bg-white">
-        <summary className="cursor-pointer list-none px-4 py-3 font-medium text-teal-800">
+      <details className="group rounded-xl border border-dashed border-accent/50 bg-panel">
+        <summary className="cursor-pointer list-none px-4 py-3 font-medium text-accent">
           <span className="group-open:hidden">+ {novo}</span>
           <span className="hidden group-open:inline">{novo}</span>
         </summary>
-        <div className="border-t border-zinc-100 p-4">
+        <div className="border-t border-line p-4">
           <Formulario grupos={grupos} valores={valoresNovo} acao={acaoNovo} rotuloBotao="Cadastrar" limparAoSalvar />
         </div>
       </details>
 
-      {itens.length === 0 && <p className="py-6 text-center text-sm text-zinc-500">Nada cadastrado ainda.</p>}
+      {itens.length === 0 && <p className="py-6 text-center text-sm text-muted">Nada cadastrado ainda.</p>}
 
       <ul className="space-y-2">
         {itens.map((item) => (
           <li key={item.id}>
-            <details className={`rounded-xl bg-white ring-1 ring-zinc-200 ${item.ativo ? "" : "opacity-60"}`}>
+            <details className={`rounded-xl bg-panel ring-1 ring-line ${item.ativo ? "" : "opacity-60"}`}>
               <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3">
                 {item.cor !== undefined && (
                   <span
-                    className="size-4 shrink-0 rounded-full ring-1 ring-zinc-300"
+                    className="size-4 shrink-0 rounded-full ring-1 ring-line"
                     style={{ backgroundColor: item.cor ?? "transparent" }}
                     aria-hidden
                   />
@@ -194,19 +194,16 @@ function Lista({
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">
                     {item.titulo}
-                    {!item.ativo && <span className="ml-2 text-xs font-normal text-zinc-500">(inativo)</span>}
+                    {!item.ativo && <span className="ml-2 text-xs font-normal text-muted">(inativo)</span>}
                   </span>
-                  <span className="block truncate text-sm text-zinc-500">{item.detalhe}</span>
+                  <span className="block truncate text-sm text-muted">{item.detalhe}</span>
                 </span>
-                <span className="text-sm text-teal-700">Editar</span>
+                <span className="text-sm text-accent">Editar</span>
               </summary>
-              <div className="space-y-3 border-t border-zinc-100 p-4">
+              <div className="space-y-3 border-t border-line p-4">
                 <Formulario grupos={grupos} valores={item.valores} acao={item.acao} />
-                <div className="border-t border-zinc-100 pt-3">
-                  <BotaoExcluir
-                    acao={item.excluir}
-                    confirmacao={`Excluir "${item.titulo}"? Se já foi usado em orçamentos, será só desativado.`}
-                  />
+                <div className="border-t border-line pt-3">
+                  <BotaoExcluir acao={item.excluir} aviso="Toque de novo para excluir. Se já foi usado em orçamentos, será só desativado." />
                 </div>
               </div>
             </details>

@@ -33,8 +33,8 @@ export function Nav() {
   return (
     <>
       {/* Desktop: barra lateral */}
-      <nav className="fixed inset-y-0 left-0 hidden w-56 flex-col border-r border-zinc-200 bg-white p-4 md:flex">
-        <span className="mb-6 px-2 text-xl font-semibold text-teal-800">Ideia</span>
+      <nav className="fixed inset-y-0 left-0 hidden w-56 flex-col border-r border-line bg-panel p-4 md:flex">
+        <span className="mb-6 px-2 text-xl font-semibold text-accent">Ideia</span>
         <ul className="space-y-1">
           {ITENS.map((item) => (
             <li key={item.href}>
@@ -42,8 +42,8 @@ export function Nav() {
                 href={item.href}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${
                   ativo(pathname, item.href)
-                    ? "bg-teal-50 font-medium text-teal-800"
-                    : "text-zinc-600 hover:bg-zinc-100"
+                    ? "bg-soft font-medium text-accent"
+                    : "text-muted hover:bg-soft"
                 }`}
               >
                 <Icone d={item.icone} />
@@ -55,14 +55,14 @@ export function Nav() {
       </nav>
 
       {/* Celular: barra inferior */}
-      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-panel pb-[env(safe-area-inset-bottom)] md:hidden">
         <ul className="grid grid-cols-5">
           {ITENS.map((item) => (
             <li key={item.href}>
               <Link
                 href={item.href}
                 className={`flex flex-col items-center gap-0.5 py-2 text-[11px] ${
-                  ativo(pathname, item.href) ? "font-medium text-teal-700" : "text-zinc-500"
+                  ativo(pathname, item.href) ? "font-medium text-accent" : "text-muted"
                 }`}
               >
                 <Icone d={item.icone} />

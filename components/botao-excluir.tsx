@@ -1,36 +1,44 @@
 "use client";
 
-import { useActionState } from "react";
+import { startTransition, useActionState, useEffect, useState } from "react";
 import type { EstadoAcao } from "@/lib/form";
 
 type Props = {
   acao: (estado: EstadoAcao) => Promise<EstadoAcao>;
-  confirmacao: string;
+  /** Dica exibida enquanto o botão espera a confirmação. */
+  aviso?: string;
 };
 
-export function BotaoExcluir({ acao, confirmacao }: Props) {
-  const [estado, formAction, pendente] = useActionState(acao, {});
+/** Excluir em dois toques (como no protótipo): o primeiro arma "Confirmar" por 3,5 s, o segundo exclui. */
+export function BotaoExcluir({ acao, aviso }: Props) {
+  const [estado, executar, pendente] = useActionState(acao, {});
+  const [armado, setArmado] = useState(false);
+
+  useEffect(() => {
+    if (!armado) return;
+    const t = setTimeout(() => setArmado(false), 3500);
+    return () => clearTimeout(t);
+  }, [armado]);
 
   return (
-    <form
-      action={formAction}
-      onSubmit={(e) => {
-        if (!confirm(confirmacao)) e.preventDefault();
-      }}
-      className="flex flex-wrap items-center gap-3"
-    >
+    <div className="flex flex-wrap items-center gap-3">
       <button
-        type="submit"
+        type="button"
         disabled={pendente}
-        className="rounded-lg px-3 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-60"
+        onClick={() => {
+          if (!armado) return setArmado(true);
+          setArmado(false);
+          startTransition(() => executar());
+        }}
+        className={`rounded border px-3 py-1.5 text-sm font-semibold disabled:opacity-60 ${
+          armado ? "border-danger bg-danger text-panel" : "border-line text-danger hover:bg-danger/10"
+        }`}
       >
-        {pendente ? "Excluindo…" : "Excluir"}
+        {pendente ? "Excluindo…" : armado ? "Confirmar" : "Excluir"}
       </button>
-      {(estado.erro || estado.mensagem) && (
-        <p role="status" className={`text-sm ${estado.erro ? "text-red-600" : "text-zinc-600"}`}>
-          {estado.erro ?? estado.mensagem}
-        </p>
-      )}
-    </form>
+      <p role="status" className={`text-sm ${estado.erro ? "text-danger" : "text-muted"}`}>
+        {armado ? aviso : (estado.erro ?? estado.mensagem)}
+      </p>
+    </div>
   );
 }

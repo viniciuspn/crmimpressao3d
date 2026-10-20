@@ -13,8 +13,11 @@ type Props = {
   limparAoSalvar?: boolean;
 };
 
-export const inputClass =
-  "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base focus:border-teal-600 focus:outline-none aria-invalid:border-red-500";
+// Caixa do campo no estilo do protótipo: prefixo/sufixo de unidade dentro da borda.
+const caixaClass =
+  "flex w-full items-stretch overflow-hidden rounded border border-line bg-bg focus-within:border-accent focus-within:ring-2 focus-within:ring-soft has-aria-invalid:border-danger";
+const controleClass = "min-w-0 flex-1 border-0 bg-transparent px-2.5 py-2 text-base text-ink outline-none";
+const unidadeClass = "flex items-center whitespace-nowrap border-line px-2.5 font-mono text-xs text-muted";
 
 export function Formulario({ grupos, valores = {}, acao, rotuloBotao = "Salvar", limparAoSalvar }: Props) {
   const [estado, formAction, pendente] = useActionState(acao, {});
@@ -39,8 +42,15 @@ export function Formulario({ grupos, valores = {}, acao, rotuloBotao = "Salvar",
       noValidate
     >
       {grupos.map((grupo, i) => (
-        <fieldset key={grupo.titulo ?? i} className="space-y-3">
-          {grupo.titulo && <legend className="mb-2 text-sm font-semibold text-zinc-700">{grupo.titulo}</legend>}
+        <fieldset
+          key={grupo.titulo ?? i}
+          className={grupo.titulo ? "rounded-md border border-line bg-panel px-4 pt-2 pb-4" : undefined}
+        >
+          {grupo.titulo && (
+            <legend className="px-1.5 text-[11px] font-semibold tracking-[.12em] text-muted uppercase">
+              {grupo.titulo}
+            </legend>
+          )}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {grupo.campos.map((campo) => (
               <CampoFormulario
@@ -59,11 +69,11 @@ export function Formulario({ grupos, valores = {}, acao, rotuloBotao = "Salvar",
         <button
           type="submit"
           disabled={pendente}
-          className="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800 disabled:opacity-60"
+          className="rounded bg-accent px-4 py-2 font-semibold text-accent-ink hover:opacity-90 disabled:opacity-60"
         >
           {pendente ? "Salvando…" : rotuloBotao}
         </button>
-        <p role="status" className={`text-sm ${estado.erro ? "text-red-600" : "text-teal-700"}`}>
+        <p role="status" className={`text-sm ${estado.erro ? "text-danger" : "text-accent"}`}>
           {pendente ? "" : (estado.erro ?? (estado.ok ? (estado.mensagem ?? "Salvo") : ""))}
         </p>
       </div>
@@ -85,7 +95,7 @@ function CampoFormulario({
   if (campo.tipo === "checkbox") {
     return (
       <label className={`flex items-center gap-2 self-end py-2 ${campo.inteiro ? "sm:col-span-2" : ""}`}>
-        <input type="checkbox" name={campo.nome} defaultChecked={valor === true} className="size-5 accent-teal-700" />
+        <input type="checkbox" name={campo.nome} defaultChecked={valor === true} className="size-5 accent-(--accent)" />
         <span className="text-sm">{campo.rotulo}</span>
       </label>
     );
@@ -102,7 +112,7 @@ function CampoFormulario({
   let controle;
   if (campo.tipo === "selecao") {
     controle = (
-      <select {...comum} defaultValue={String(valor ?? campo.opcoes?.[0] ?? "")} className={inputClass}>
+      <select {...comum} defaultValue={String(valor ?? campo.opcoes?.[0] ?? "")} className={controleClass}>
         {campo.opcoes?.map((o) => (
           <option key={o} value={o}>
             {o}
@@ -111,7 +121,7 @@ function CampoFormulario({
       </select>
     );
   } else if (campo.tipo === "textarea") {
-    controle = <textarea {...comum} rows={3} defaultValue={String(valor ?? "")} className={inputClass} />;
+    controle = <textarea {...comum} rows={3} defaultValue={String(valor ?? "")} className={controleClass} />;
   } else if (campo.tipo === "cor") {
     controle = <CampoCor comum={comum} valor={typeof valor === "string" ? valor : null} />;
   } else {
@@ -123,24 +133,28 @@ function CampoFormulario({
         inputMode={campo.tipo === "decimal" ? "decimal" : campo.tipo === "inteiro" ? "numeric" : undefined}
         autoComplete="off"
         defaultValue={numerico ? numeroParaCampo(valor as number | null) : String(valor ?? "")}
-        className={inputClass}
+        className={numerico ? `${controleClass} font-mono tabular-nums` : controleClass}
       />
     );
   }
 
   return (
     <div className={campo.inteiro ? "sm:col-span-2" : undefined}>
-      <label htmlFor={id} className="mb-1 block text-sm font-medium text-zinc-700">
+      <label htmlFor={id} className="mb-1 block text-[13px] text-muted">
         {campo.rotulo}
-        {campo.obrigatorio && <span className="text-red-600"> *</span>}
+        {campo.obrigatorio && <span className="text-danger"> *</span>}
       </label>
-      <div className="flex items-center gap-2">
-        {campo.prefixo && <span className="text-sm text-zinc-500">{campo.prefixo}</span>}
-        {controle}
-        {campo.sufixo && <span className="shrink-0 text-sm text-zinc-500">{campo.sufixo}</span>}
-      </div>
+      {campo.tipo === "cor" ? (
+        controle
+      ) : (
+        <div className={caixaClass}>
+          {campo.prefixo && <span className={`${unidadeClass} border-r`}>{campo.prefixo}</span>}
+          {controle}
+          {campo.sufixo && <span className={`${unidadeClass} border-l`}>{campo.sufixo}</span>}
+        </div>
+      )}
       {(erro || campo.ajuda) && (
-        <p id={`${id}-ajuda`} className={`mt-1 text-xs ${erro ? "text-red-600" : "text-zinc-500"}`}>
+        <p id={`${id}-ajuda`} className={`mt-1 text-xs ${erro ? "text-danger" : "text-muted"}`}>
           {erro ?? campo.ajuda}
         </p>
       )}
@@ -158,14 +172,14 @@ function CampoCor({ comum, valor }: { comum: { id: string; name: string }; valor
         type="color"
         disabled={semCor}
         defaultValue={valor ?? "#ffffff"}
-        className="h-10 w-16 cursor-pointer rounded-lg border border-zinc-300 bg-white p-1 disabled:cursor-not-allowed disabled:opacity-40"
+        className="h-10 w-16 cursor-pointer rounded border border-line bg-bg p-1 disabled:cursor-not-allowed disabled:opacity-40"
       />
       <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"
           checked={semCor}
           onChange={(e) => setSemCor(e.target.checked)}
-          className="size-5 accent-teal-700"
+          className="size-5 accent-(--accent)"
         />
         Sem cor
       </label>

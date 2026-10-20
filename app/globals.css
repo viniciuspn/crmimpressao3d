@@ -1,5 +1,84 @@
 @import "tailwindcss";
 
+/* Identidade do protótipo Ideia.html: tokens de cor (claro/escuro) e fontes. */
+:root {
+  --bg: #eef1f2;
+  --panel: #ffffff;
+  --ink: #15211f;
+  --muted: #5d6b69;
+  --line: #d5dcdb;
+  --accent: #0b7d78;
+  --accent-ink: #ffffff;
+  --soft: #e2efee;
+  --danger: #b23a26;
+  --ok: #2e7d32;
+  /* Composição do custo */
+  --c1: #0b7d78;
+  --c2: #e0a100;
+  --c3: #6b5bd2;
+  --c4: #8a9a98;
+  --c5: #d4573b;
+  --c6: #2f8fd8;
+  --c7: #4f6d3a;
+  --c8: #b0479a;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1514;
+    --panel: #172120;
+    --ink: #e3ecea;
+    --muted: #94a5a2;
+    --line: #2a3836;
+    --accent: #3cc4bc;
+    --accent-ink: #06211f;
+    --soft: #1d2e2c;
+    --danger: #f08a72;
+    --ok: #7bd88f;
+    --c1: #3cc4bc;
+    --c2: #f0b929;
+    --c3: #9a8cf0;
+    --c4: #7e908d;
+    --c5: #ef7a5f;
+    --c6: #5aaeef;
+    --c7: #8fb46f;
+    --c8: #e07cc8;
+    color-scheme: dark;
+  }
+}
+
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-soft: var(--soft);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-warn: var(--c2);
+  --color-c1: var(--c1);
+  --color-c2: var(--c2);
+  --color-c3: var(--c3);
+  --color-c4: var(--c4);
+  --color-c5: var(--c5);
+  --color-c6: var(--c6);
+  --color-c7: var(--c7);
+  --color-c8: var(--c8);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

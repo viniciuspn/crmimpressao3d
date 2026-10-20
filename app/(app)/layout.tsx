@@ -8,11 +8,11 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="min-h-dvh md:pl-56">
       <Nav />
-      <header className="flex items-center justify-between border-b border-zinc-200 bg-white px-4 py-3">
-        <span className="text-lg font-semibold text-teal-800 md:invisible">Ideia</span>
-        <form action={sair} className="flex items-center gap-3 text-sm text-zinc-500">
+      <header className="flex items-center justify-between border-b border-line bg-panel px-4 py-3">
+        <span className="text-lg font-semibold text-accent md:invisible">Ideia</span>
+        <form action={sair} className="flex items-center gap-3 text-sm text-muted">
           <span className="hidden sm:inline">{email}</span>
-          <button type="submit" className="rounded-md px-2 py-1 hover:bg-zinc-100">
+          <button type="submit" className="rounded-md px-2 py-1 hover:bg-soft">
             Sair
           </button>
         </form>
