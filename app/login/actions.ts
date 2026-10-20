@@ -25,6 +25,10 @@ export async function entrar(_prev: LoginState, formData: FormData): Promise<Log
   });
   if (error) return { erro: "E-mail ou senha incorretos" };
 
+  // Primeiro acesso: cria impressora, filamentos e insumo iniciais (não faz nada nas próximas vezes).
+  const { error: erroDados } = await supabase.rpc("criar_dados_iniciais");
+  if (erroDados) console.error("criar_dados_iniciais falhou", erroDados);
+
   redirect("/");
 }
 
