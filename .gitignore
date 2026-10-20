@@ -44,3 +44,6 @@ lib/database.types.tmp
 
 # SQL gerado para colar no SQL Editor
 aplicar-banco.sql
+e2e/.auth/
+playwright-report/
+test-results/
