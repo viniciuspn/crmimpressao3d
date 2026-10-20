@@ -14,10 +14,10 @@ type Props = {
 };
 
 // Caixa do campo no estilo do protótipo: prefixo/sufixo de unidade dentro da borda.
-const caixaClass =
+export const caixaClass =
   "flex w-full items-stretch overflow-hidden rounded border border-line bg-bg focus-within:border-accent focus-within:ring-2 focus-within:ring-soft has-aria-invalid:border-danger";
-const controleClass = "min-w-0 flex-1 border-0 bg-transparent px-2.5 py-2 text-base text-ink outline-none";
-const unidadeClass = "flex items-center whitespace-nowrap border-line px-2.5 font-mono text-xs text-muted";
+export const controleClass = "min-w-0 flex-1 border-0 bg-transparent px-2.5 py-2 text-base text-ink outline-none";
+export const unidadeClass = "flex items-center whitespace-nowrap border-line px-2.5 font-mono text-xs text-muted";
 
 export function Formulario({ grupos, valores = {}, acao, rotuloBotao = "Salvar", limparAoSalvar }: Props) {
   const [estado, formAction, pendente] = useActionState(acao, {});

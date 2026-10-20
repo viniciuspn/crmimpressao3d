@@ -6,7 +6,7 @@ import { custoPorUnidade, precoPorKg } from "@/lib/calculo";
 import { camposFilamento, camposImpressora, camposInsumo } from "@/lib/cadastros";
 import type { GrupoCampos, Valores } from "@/lib/form";
 import type { TabelaCadastro } from "@/lib/dominio";
-import { formatarBRL, formatarNumero } from "@/lib/formato";
+import { formatarBRL, formatarCustoUnitario, formatarNumero } from "@/lib/formato";
 import { requireUser } from "@/lib/supabase/server";
 import {
   excluirCadastro,
@@ -89,7 +89,7 @@ async function Impressoras() {
         id: i.id,
         titulo: i.nome,
         ativo: i.ativo,
-        detalhe: `${formatarBRL(i.preco)} · ${formatarNumero(i.consumo_w)} W · depreciação ${formatarCusto(i.preco / i.vida_util_h)}/h`,
+        detalhe: `${formatarBRL(i.preco)} · ${formatarNumero(i.consumo_w)} W · depreciação ${formatarCustoUnitario(i.preco / i.vida_util_h)}/h`,
         valores: i,
         acao: salvarImpressora.bind(null, i.id),
         excluir: excluirCadastro.bind(null, "impressoras", i.id),
@@ -118,7 +118,7 @@ async function Insumos() {
             custo === null ? (
               <span className="text-warn">Preencha a quantidade na embalagem</span>
             ) : (
-              `${formatarBRL(i.preco_pago)} · ${formatarCusto(custo)}/${i.unidade}`
+              `${formatarBRL(i.preco_pago)} · ${formatarCustoUnitario(custo)}/${i.unidade}`
             ),
           valores: i,
           acao: salvarInsumo.bind(null, i.id),
@@ -129,17 +129,6 @@ async function Insumos() {
   );
 }
 
-const custoUnitario = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 4,
-});
-
-/** Custos unitários pequenos precisam de mais casas (ex.: R$ 0,0009/ml). */
-function formatarCusto(valor: number) {
-  return custoUnitario.format(valor);
-}
 
 type Item = {
   id: string;
