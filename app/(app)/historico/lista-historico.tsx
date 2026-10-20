@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useMemo, useState, useTransition } from "react";
+import { startTransition, useId, useMemo, useOptimistic, useState } from "react";
 import { BotaoExcluir } from "@/components/botao-excluir";
 import { caixaClass, controleClass, Formulario } from "@/components/formulario";
+import { Kpi } from "@/components/kpi";
 import { STATUS_ORCAMENTO, type StatusOrcamento } from "@/lib/dominio";
 import type { GrupoCampos } from "@/lib/form";
 import { formatarBRL, formatarNumero } from "@/lib/formato";
-import { indicadores, linkWhatsApp, mensagemFollowup, precisaFollowup } from "@/lib/orcamento";
+import { DIA_MS, indicadores, linkWhatsApp, mensagemFollowup, normalizarBusca, precisaFollowup } from "@/lib/orcamento";
 import { alterarStatus, excluirOrcamento, registrarEntrega } from "./actions";
 
 export type ItemHistorico = {
@@ -46,18 +47,31 @@ const COR_STATUS: Record<StatusOrcamento, string> = {
   entregue: "text-muted",
 };
 
-const camposEntrega: GrupoCampos[] = [
-  {
-    campos: [
-      { nome: "horas_reais", rotulo: "Horas reais de impressão", tipo: "decimal", sufixo: "h" },
-      { nome: "gramas_reais", rotulo: "Filamento real usado", tipo: "decimal", sufixo: "g" },
-      { nome: "houve_falha", rotulo: "Houve falha (reimpressão)?", tipo: "checkbox" },
-      { nome: "observacao_entrega", rotulo: "Observação", tipo: "texto", inteiro: true },
-    ],
-  },
-];
-
-const DIA_MS = 24 * 60 * 60 * 1000;
+/** Campos em branco, com o estimado como dica: pré-preencher faria um "ok" sem olhar gravar real = estimado. */
+function camposEntrega(o: ItemHistorico): GrupoCampos[] {
+  return [
+    {
+      campos: [
+        {
+          nome: "horas_reais",
+          rotulo: "Horas reais de impressão",
+          tipo: "decimal",
+          sufixo: "h",
+          ajuda: o.horasEstimadas !== null ? `Estimado: ${formatarNumero(o.horasEstimadas)} h` : undefined,
+        },
+        {
+          nome: "gramas_reais",
+          rotulo: "Filamento real usado",
+          tipo: "decimal",
+          sufixo: "g",
+          ajuda: o.gramasEstimadas !== null ? `Estimado: ${formatarNumero(o.gramasEstimadas, 0)} g` : undefined,
+        },
+        { nome: "houve_falha", rotulo: "Houve falha (reimpressão)?", tipo: "checkbox" },
+        { nome: "observacao_entrega", rotulo: "Observação", tipo: "texto", inteiro: true },
+      ],
+    },
+  ];
+}
 const data = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 
 type Props = {
@@ -65,21 +79,22 @@ type Props = {
   clientes: { id: string; nome: string }[];
   followupDias: number;
   clienteInicial: string;
+  truncado: boolean;
 };
 
-export function ListaHistorico({ itens, clientes, followupDias, clienteInicial }: Props) {
+export function ListaHistorico({ itens, clientes, followupDias, clienteInicial, truncado }: Props) {
   const [status, setStatus] = useState("");
   const [cliente, setCliente] = useState(clienteInicial);
   const [busca, setBusca] = useState("");
   const [agora] = useState(() => Date.now());
 
   const visiveis = useMemo(() => {
-    const q = busca.trim().toLowerCase();
+    const q = normalizarBusca(busca.trim());
     return itens.filter(
       (o) =>
         (!status || o.status === status) &&
         (!cliente || o.clienteId === cliente) &&
-        (!q || [o.peca, o.clienteNome, o.material].some((v) => v?.toLowerCase().includes(q))),
+        (!q || [o.peca, o.clienteNome, o.material].some((v) => normalizarBusca(v).includes(q))),
     );
   }, [itens, status, cliente, busca]);
 
@@ -123,6 +138,10 @@ export function ListaHistorico({ itens, clientes, followupDias, clienteInicial }
         <Kpi rotulo="Lucro estimado" valor={formatarBRL(ind.lucroEstimado)} />
       </div>
 
+      {truncado && (
+        <p className="text-xs text-muted">Mostrando os 500 orçamentos mais recentes; os indicadores consideram só eles.</p>
+      )}
+
       {pendentes.length > 0 && (
         <p className="rounded border-l-[3px] border-warn bg-soft px-3 py-2 text-sm">
           {pendentes.length} orçamento(s) enviado(s) há mais de {followupDias} dias sem resposta. Vale cobrar o cliente.
@@ -150,10 +169,10 @@ export function ListaHistorico({ itens, clientes, followupDias, clienteInicial }
 }
 
 function Linha({ o, followup, diasEnviado }: { o: ItemHistorico; followup: boolean; diasEnviado: number }) {
-  const [status, setStatus] = useState<StatusOrcamento>(o.status);
+  // Otimista: mostra o novo status na hora e volta ao valor do servidor quando a ação termina.
+  const [status, setStatusOtimista] = useOptimistic(o.status);
   const [entregando, setEntregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const [pendente, iniciar] = useTransition();
   const whatsapp = linkWhatsApp(o.clienteTelefone, mensagemFollowup(o.clienteNome, o.peca));
 
   function mudarStatus(novo: StatusOrcamento) {
@@ -163,14 +182,10 @@ function Linha({ o, followup, diasEnviado }: { o: ItemHistorico; followup: boole
       return;
     }
     setEntregando(false);
-    const anterior = status;
-    setStatus(novo);
-    iniciar(async () => {
+    startTransition(async () => {
+      setStatusOtimista(novo);
       const r = await alterarStatus(o.id, novo);
-      if (r.erro) {
-        setStatus(anterior);
-        setErro(r.erro);
-      }
+      if (r.erro) setErro(r.erro);
     });
   }
 
@@ -203,9 +218,8 @@ function Linha({ o, followup, diasEnviado }: { o: ItemHistorico; followup: boole
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <select
-          aria-label="Status"
+          aria-label={`Status de ${o.peca}`}
           value={entregando ? "entregue" : status}
-          disabled={pendente}
           onChange={(e) => mudarStatus(e.target.value as StatusOrcamento)}
           className={`cursor-pointer rounded-full border border-current bg-bg px-2.5 py-1 text-xs font-semibold ${COR_STATUS[entregando ? "entregue" : status]}`}
         >
@@ -216,6 +230,11 @@ function Linha({ o, followup, diasEnviado }: { o: ItemHistorico; followup: boole
         <Link href={`/?id=${o.id}`} className="rounded border border-line px-2.5 py-1 text-xs font-semibold">
           Abrir
         </Link>
+        {status === "entregue" && !entregando && (
+          <button type="button" onClick={() => setEntregando(true)} className="rounded border border-line px-2.5 py-1 text-xs font-semibold">
+            Editar entrega
+          </button>
+        )}
         {followup && status === "enviado" && (
           <>
             <span className="text-xs text-warn">Enviado há {diasEnviado} dias</span>
@@ -239,14 +258,16 @@ function Linha({ o, followup, diasEnviado }: { o: ItemHistorico; followup: boole
         <div className="mt-3 rounded border border-line bg-bg p-3">
           <p className="mb-2 text-sm font-medium">Registrar entrega</p>
           <Formulario
-            grupos={camposEntrega}
-            valores={{ horas_reais: o.horasEstimadas, gramas_reais: o.gramasEstimadas, houve_falha: false }}
+            grupos={camposEntrega(o)}
+            valores={{
+              horas_reais: o.horasReais,
+              gramas_reais: o.gramasReais,
+              houve_falha: o.houveFalha ?? false,
+              observacao_entrega: o.observacao,
+            }}
             acao={async (estado, fd) => {
               const r = await registrarEntrega(o.id, estado, fd);
-              if (r.ok) {
-                setStatus("entregue");
-                setEntregando(false);
-              }
+              if (r.ok) setEntregando(false);
               return r;
             }}
             rotuloBotao="Marcar como entregue"
@@ -270,11 +291,3 @@ function Filtro({ rotulo, children }: { rotulo: string; children: (id: string) =
   );
 }
 
-function Kpi({ rotulo, valor }: { rotulo: string; valor: string }) {
-  return (
-    <div className="min-w-0 rounded border border-line bg-panel px-2.5 py-2">
-      <div className="text-[11px] tracking-[.08em] text-muted uppercase">{rotulo}</div>
-      <b className="mt-0.5 block font-mono text-[15px] font-semibold [overflow-wrap:anywhere]">{valor}</b>
-    </div>
-  );
-}

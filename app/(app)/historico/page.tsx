@@ -51,6 +51,7 @@ export default async function HistoricoPage({ searchParams }: PageProps<"/histor
         clientes={clientes.data ?? []}
         followupDias={config.data?.followup_dias ?? 7}
         clienteInicial={typeof cliente === "string" ? cliente : ""}
+        truncado={itens.length >= 500}
       />
     </section>
   );

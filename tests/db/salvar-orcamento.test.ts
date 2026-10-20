@@ -128,6 +128,21 @@ describe("salvar_orcamento", () => {
     expect(rows[0].peca).toBe("Vaso");
   });
 
+  it("ignora id, user_id, status e dados de entrega vindos em p_dados", async () => {
+    const forjado = "00000000-0000-0000-0000-0000000000ff";
+    const id = await como(db, BETO, () =>
+      salvar(null, dados({ id: forjado, user_id: ANA, status: "entregue", horas_reais: 1, houve_falha: true }), []),
+    );
+    expect(id).not.toBe(forjado);
+    const { rows } = await como(db, BETO, () =>
+      db.query<{ user_id: string; status: string; horas_reais: string | null; houve_falha: boolean | null }>(
+        "select user_id, status, horas_reais, houve_falha from public.orcamentos where id = $1",
+        [id],
+      ),
+    );
+    expect(rows).toEqual([{ user_id: BETO, status: "enviado", horas_reais: null, houve_falha: null }]);
+  });
+
   it("anon não executa", async () => {
     await expect(como(db, null, () => salvar(null, dados(), []))).rejects.toThrow(/permission denied/);
   });

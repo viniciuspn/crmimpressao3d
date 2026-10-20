@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useId, useMemo, useState, useTransition, type ReactNode } from "react";
 import { caixaClass, controleClass, unidadeClass } from "@/components/formulario";
-import { calcular, custoPorUnidade, precoPorKg, type ComponenteCusto, type ResultadoCalculo } from "@/lib/calculo";
+import { Kpi } from "@/components/kpi";
+import { arredondar2, calcular, custoPorUnidade, precoPorKg, type ComponenteCusto, type ResultadoCalculo } from "@/lib/calculo";
 import { BASES_INSUMO, type BaseInsumo, type UnidadeInsumo } from "@/lib/dominio";
 import { formatarBRL, formatarCustoUnitario, formatarNumero, numeroParaCampo, paraNumero } from "@/lib/formato";
 import {
@@ -42,7 +43,14 @@ export type FilamentoOpcao = { id: string; nome: string; tipo: string; preco_rol
 export type ImpressoraOpcao = { id: string; nome: string; preco: number; vida_util_h: number; consumo_w: number; manutencao_h: number };
 export type InsumoOpcao = { id: string; nome: string; unidade: UnidadeInsumo; preco_pago: number; qtd_embalagem: number };
 export type ClienteOpcao = { id: string; nome: string };
-export type OrcamentoAberto = { id: string; entrada: EntradaOrcamento; material: string; criadoEm: string; cliente: string | null };
+export type OrcamentoAberto = {
+  id: string;
+  entrada: EntradaOrcamento;
+  material: string;
+  impressoraNome: string;
+  criadoEm: string;
+  cliente: string | null;
+};
 
 type Props = {
   config: Config;
@@ -51,6 +59,7 @@ type Props = {
   insumos: InsumoOpcao[];
   clientes: ClienteOpcao[];
   orcamento: OrcamentoAberto | null;
+  mensagemInicial?: string | null;
 };
 
 // ---------- Estado do formulário (textos como digitados) ----------
@@ -109,7 +118,7 @@ function estadoInicial({ config, filamentos, impressoras, orcamento }: Props): E
     pecas_por_mesa: "1",
     gramas_por_mesa: "",
     horas_por_mesa: "",
-    preco_kg: n(f ? arred(precoPorKg(f)) : FILAMENTOS_GENERICOS.PLA),
+    preco_kg: n(f ? arredondar2(precoPorKg(f)) : FILAMENTOS_GENERICOS.PLA),
     desperdicio_pct: n(config.desperdicio_pct),
     consumo_w: n(imp?.consumo_w ?? 120),
     preco_impressora: n(imp?.preco ?? 3000),
@@ -132,11 +141,20 @@ function estadoInicial({ config, filamentos, impressoras, orcamento }: Props): E
   };
 }
 
-const arred = (v: number) => Math.round(v * 100) / 100;
-
-/** Converte o estado em entrada validada (mesmo schema do servidor); null se algo estiver incompleto. */
-function montarEntrada(s: Estado): EntradaOrcamento | null {
-  const numeros = Object.fromEntries(CAMPOS_NUMERICOS.map((c) => [c, paraNumero(s[c]) ?? Number.NaN]));
+/**
+ * Converte o estado em entrada validada (mesmo schema do servidor).
+ * Devolve também os campos inválidos, para destacá-los. Sem descrição, o cálculo ao vivo usa
+ * "Impressão 3D"; para salvar, a descrição é obrigatória (validada em salvar()).
+ */
+function montarEntrada(s: Estado): { entrada: EntradaOrcamento | null; invalidos: Set<string> } {
+  const numeros: Record<string, number> = Object.fromEntries(
+    CAMPOS_NUMERICOS.map((c) => [c, paraNumero(s[c]) ?? Number.NaN]),
+  );
+  // Retorno desligado: os campos dele não importam para o cálculo.
+  if (!s.retorno_ativo) {
+    if (!(numeros.retorno_meses >= 1)) numeros.retorno_meses = 12;
+    if (!(numeros.retorno_horas_mes >= 1)) numeros.retorno_horas_mes = 160;
+  }
   const filamento = s.filamento.startsWith("db:")
     ? { tipo: "cadastro" as const, id: s.filamento.slice(3) }
     : { tipo: "generico" as const, nome: s.filamento.slice(4) };
@@ -150,7 +168,8 @@ function montarEntrada(s: Estado): EntradaOrcamento | null {
     retorno_ativo: s.retorno_ativo,
     insumos: s.linhas,
   });
-  return r.success ? r.data : null;
+  if (r.success) return { entrada: r.data, invalidos: new Set() };
+  return { entrada: null, invalidos: new Set(r.error.issues.map((i) => String(i.path[0]))) };
 }
 
 // ---------- Composição do custo ----------
@@ -175,11 +194,14 @@ export function EditorOrcamento(props: Props) {
   const router = useRouter();
   const [s, setS] = useState<Estado>(() => estadoInicial(props));
   const [salvando, iniciarSalvar] = useTransition();
-  const [mensagem, setMensagem] = useState<{ texto: string; erro?: boolean } | null>(null);
+  const [mensagem, setMensagem] = useState<{ texto: string; erro?: boolean } | null>(
+    props.mensagemInicial ? { texto: props.mensagemInicial } : null,
+  );
+  const [tentouSalvar, setTentouSalvar] = useState(false);
 
   const set = <K extends keyof Estado>(campo: K, valor: Estado[K]) => setS((atual) => ({ ...atual, [campo]: valor }));
 
-  const entrada = useMemo(() => montarEntrada(s), [s]);
+  const { entrada, invalidos } = useMemo(() => montarEntrada(s), [s]);
   const resultado: ResultadoCalculo | null = useMemo(() => {
     if (!entrada) return null;
     try {
@@ -202,7 +224,7 @@ export function EditorOrcamento(props: Props) {
     setS((a) => ({
       ...a,
       filamento: valor,
-      preco_kg: f ? numeroParaCampo(arred(precoPorKg(f))) : g ? numeroParaCampo(FILAMENTOS_GENERICOS[g]) : a.preco_kg,
+      preco_kg: f ? numeroParaCampo(arredondar2(precoPorKg(f))) : g ? numeroParaCampo(FILAMENTOS_GENERICOS[g]) : a.preco_kg,
     }));
   }
 
@@ -221,8 +243,13 @@ export function EditorOrcamento(props: Props) {
   }
 
   function salvar() {
+    setTentouSalvar(true);
+    if (!s.peca.trim()) {
+      setMensagem({ texto: "Descreva a peça antes de salvar.", erro: true });
+      return;
+    }
     if (!entrada || !resultado) {
-      setMensagem({ texto: "Preencha os campos destacados antes de salvar.", erro: true });
+      setMensagem({ texto: "Corrija os campos destacados antes de salvar.", erro: true });
       return;
     }
     setMensagem(null);
@@ -230,7 +257,8 @@ export function EditorOrcamento(props: Props) {
       const r = await salvarOrcamento(orcamento?.id ?? null, entrada);
       if (!r.ok) return setMensagem({ texto: r.erro, erro: true });
       setMensagem({ texto: r.mensagem });
-      if (!orcamento) router.replace(`/?id=${r.id}`);
+      // ?salvo=1: o editor é remontado com o id novo e mostra a mensagem de novo.
+      if (!orcamento) router.replace(`/?id=${r.id}&salvo=1`);
       else router.refresh();
     });
   }
@@ -258,10 +286,8 @@ export function EditorOrcamento(props: Props) {
   }
 
   const num = (c: CampoNumerico) => paraNumero(s[c]);
-  const invalido = (c: CampoNumerico) => {
-    const v = num(c);
-    return v === undefined || Number.isNaN(v);
-  };
+  // Destaca só o que já foi digitado errado; campos vazios ficam vermelhos depois de tentar salvar.
+  const invalido = (c: CampoNumerico) => invalidos.has(c) && (tentouSalvar || s[c].trim() !== "");
   const campo = (c: CampoNumerico, rotulo: string, extra: { prefixo?: string; sufixo?: string; inteiro?: boolean } = {}) => (
     <CampoNumero
       rotulo={rotulo}
@@ -287,7 +313,13 @@ export function EditorOrcamento(props: Props) {
       <div className="grid min-w-0 gap-3.5">
         <Secao titulo="Trabalho (do fatiador)">
           <Grade>
-            <CampoTexto rotulo="Peça / descrição" valor={s.peca} onChange={(v) => set("peca", v)} placeholder="Suporte de headset" />
+            <CampoTexto
+              rotulo="Peça / descrição"
+              valor={s.peca}
+              onChange={(v) => set("peca", v)}
+              placeholder="Suporte de headset"
+              invalido={tentouSalvar && !s.peca.trim()}
+            />
             <CampoSelecao rotulo="Cliente" valor={s.clienteId} onChange={(v) => set("clienteId", v)}>
               <option value="">Sem cliente</option>
               {clientes.map((c) => (
@@ -299,6 +331,9 @@ export function EditorOrcamento(props: Props) {
               {impressoras.map((p) => (
                 <option key={p.id} value={p.id}>{p.nome}</option>
               ))}
+              {s.impressoraId && !impressoras.some((p) => p.id === s.impressoraId) && (
+                <option value={s.impressoraId}>{orcamento?.impressoraNome || "Impressora do orçamento"} (inativa)</option>
+              )}
             </CampoSelecao>
             <CampoSelecao rotulo="Filamento" valor={s.filamento} onChange={escolherFilamento}>
               {filamentos.length > 0 && (
@@ -378,7 +413,8 @@ export function EditorOrcamento(props: Props) {
                 const existente = a.linhas.findIndex((x) => x.insumo_id === l.insumo_id && x.base === l.base);
                 if (existente < 0) return { ...a, linhas: [...a.linhas, l] };
                 const linhas = [...a.linhas];
-                linhas[existente] = { ...linhas[existente], quantidade: linhas[existente].quantidade + l.quantidade };
+                // Soma a quantidade e passa a usar o custo atual do cadastro.
+                linhas[existente] = { ...l, quantidade: linhas[existente].quantidade + l.quantidade };
                 return { ...a, linhas };
               })
             }
@@ -461,10 +497,9 @@ export function EditorOrcamento(props: Props) {
       </div>
 
       <aside
-        aria-live="polite"
         className="min-w-0 overflow-hidden rounded-md border border-line bg-panel lg:sticky lg:top-4"
       >
-        <div className="bg-accent px-4.5 pt-4.5 pb-4 text-accent-ink">
+        <div className="bg-accent px-4.5 pt-4.5 pb-4 text-accent-ink" aria-live="polite">
           <small className="text-[11px] font-semibold tracking-[.12em] uppercase opacity-85">Preço sugerido</small>
           <div className="my-1 font-mono text-[clamp(34px,5vw,44px)] leading-tight font-semibold tracking-tight tabular-nums" data-testid="preco-total">
             {r ? formatarBRL(r.preco) : "—"}
@@ -604,15 +639,6 @@ function Aviso({ children }: { children: ReactNode }) {
   return <div className="mt-2 rounded border-l-[3px] border-warn bg-soft px-2.5 py-2 text-[13px]">{children}</div>;
 }
 
-function Kpi({ rotulo, valor }: { rotulo: string; valor: string }) {
-  return (
-    <div className="min-w-0 rounded border border-line px-2.5 py-2">
-      <div className="text-[11px] tracking-[.08em] text-muted uppercase">{rotulo}</div>
-      <b className="mt-0.5 block font-mono text-[15px] font-semibold [overflow-wrap:anywhere]">{valor}</b>
-    </div>
-  );
-}
-
 function Rotulo({ id, rotulo, children }: { id: string; rotulo: string; children: ReactNode }) {
   return (
     <div className="grid min-w-0 gap-1">
@@ -652,12 +678,21 @@ function CampoNumero(p: {
   );
 }
 
-function CampoTexto(p: { rotulo: string; valor: string; onChange: (v: string) => void; placeholder?: string }) {
+function CampoTexto(p: { rotulo: string; valor: string; onChange: (v: string) => void; placeholder?: string; invalido?: boolean }) {
   const id = useId();
   return (
     <Rotulo id={id} rotulo={p.rotulo}>
       <div className={caixaClass}>
-        <input id={id} type="text" value={p.valor} maxLength={120} placeholder={p.placeholder} onChange={(e) => p.onChange(e.target.value)} className={controleClass} />
+        <input
+          id={id}
+          type="text"
+          value={p.valor}
+          maxLength={120}
+          placeholder={p.placeholder}
+          aria-invalid={p.invalido || undefined}
+          onChange={(e) => p.onChange(e.target.value)}
+          className={controleClass}
+        />
       </div>
     </Rotulo>
   );

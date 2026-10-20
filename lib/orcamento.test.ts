@@ -4,6 +4,7 @@ import {
   indicadores,
   linkWhatsApp,
   mensagemFollowup,
+  normalizarBusca,
   precisaFollowup,
   rotuloMaterial,
   textoOrcamento,
@@ -54,6 +55,12 @@ describe("textoOrcamento", () => {
     expect(t).toContain("~3 h de impressão");
     expect(t).toContain("Acabamento: pintado");
     expect(t).toContain("válido por 10 dias");
+  });
+
+  it("não soma uma hora por ruído de ponto flutuante", () => {
+    const t = textoOrcamento({ peca: "x", material: "PLA", pintado: false, quantidade: 25, horas: 2.2 * 25, preco: 100, validadeDias: 7 });
+    expect(2.2 * 25).not.toBe(55);
+    expect(t).toContain("~55 h de impressão");
   });
 });
 
@@ -153,6 +160,13 @@ describe("entradaOrcamentoSchema", () => {
     ["linha de insumo com quantidade 0", { insumos: [{ insumo_id: null, nome: "x", unidade: "un", custo_unitario: 1, quantidade: 0, base: "peca" }] }],
   ])("recusa %s", (_, extra) => {
     expect(entradaOrcamentoSchema.safeParse({ ...base, ...extra }).success).toBe(false);
+  });
+});
+
+describe("normalizarBusca", () => {
+  it("ignora acentos e caixa", () => {
+    expect(normalizarBusca("Impressão Ç")).toBe("impressao c");
+    expect(normalizarBusca(null)).toBe("");
   });
 });
 

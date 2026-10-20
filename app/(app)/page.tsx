@@ -3,11 +3,16 @@ import { entradaOrcamentoSchema } from "@/lib/orcamento";
 import { requireUser } from "@/lib/supabase/server";
 import { EditorOrcamento, type Config, type InsumoOpcao, type OrcamentoAberto } from "./editor-orcamento";
 
-const parametrosSchema = z.object({ entrada: entradaOrcamentoSchema, material: z.string().optional() });
+const parametrosSchema = z.object({
+  entrada: entradaOrcamentoSchema,
+  material: z.string().optional(),
+  impressora_nome: z.string().optional(),
+});
 
 export default async function OrcamentoPage({ searchParams }: PageProps<"/">) {
-  const { id: idParam, novo } = await searchParams;
+  const { id: idParam, novo, salvo } = await searchParams;
   const id = typeof idParam === "string" && z.uuid().safeParse(idParam).success ? idParam : null;
+  const idInvalido = idParam !== undefined && id === null;
   const { supabase } = await requireUser();
 
   const [config, filamentos, impressoras, insumos, clientes, aberto] = await Promise.all([
@@ -27,7 +32,7 @@ export default async function OrcamentoPage({ searchParams }: PageProps<"/">) {
       .order("nome"),
     supabase.from("clientes").select("id, nome").order("nome"),
     id
-      ? supabase.from("orcamentos").select("id, parametros, created_at, clientes(nome)").eq("id", id).maybeSingle()
+      ? supabase.from("orcamentos").select("id, parametros, created_at, cliente_id, clientes(nome)").eq("id", id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
@@ -40,15 +45,27 @@ export default async function OrcamentoPage({ searchParams }: PageProps<"/">) {
   }
 
   let orcamento: OrcamentoAberto | null = null;
-  let erroAbrir: string | null = null;
+  let erroAbrir: string | null = idInvalido ? "Orçamento não encontrado." : null;
   if (id) {
     const o = aberto.data;
     const p = o ? parametrosSchema.safeParse(o.parametros) : null;
     if (o && p?.success) {
+      // A entrada congelada pode citar cadastros que sumiram depois: vale o estado atual do banco
+      // (cliente apagado → sem cliente; insumo apagado → linha mantida, sem vínculo).
+      const idsInsumos = p.data.entrada.insumos.flatMap((l) => (l.insumo_id ? [l.insumo_id] : []));
+      const existentes = idsInsumos.length
+        ? new Set((await supabase.from("insumos").select("id").in("id", idsInsumos)).data?.map((i) => i.id))
+        : new Set<string>();
+      const entrada = {
+        ...p.data.entrada,
+        cliente_id: o.cliente_id,
+        insumos: p.data.entrada.insumos.map((l) => (l.insumo_id && !existentes.has(l.insumo_id) ? { ...l, insumo_id: null } : l)),
+      };
       orcamento = {
         id: o.id,
-        entrada: p.data.entrada,
+        entrada,
         material: p.data.material ?? "",
+        impressoraNome: p.data.impressora_nome ?? "",
         criadoEm: o.created_at,
         cliente: o.clientes?.nome ?? null,
       };
@@ -72,6 +89,7 @@ export default async function OrcamentoPage({ searchParams }: PageProps<"/">) {
         insumos={(insumos.data ?? []) as InsumoOpcao[]}
         clientes={clientes.data ?? []}
         orcamento={orcamento}
+        mensagemInicial={salvo === "1" && orcamento ? "Orçamento salvo no histórico" : null}
       />
     </section>
   );

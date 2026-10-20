@@ -131,7 +131,8 @@ export function textoOrcamento(d: {
     `Material: ${d.material}`,
     `Acabamento: ${d.pintado ? "pintado" : "sem pintura"}`,
     `Quantidade: ${d.quantidade} peça(s)`,
-    `Tempo de produção: ~${Math.ceil(d.horas)} h de impressão`,
+    // toPrecision tira o ruído de ponto flutuante (2,2 × 25 = 55.00000000000001 não vira ~56 h)
+    `Tempo de produção: ~${Math.ceil(Number(d.horas.toPrecision(12)))} h de impressão`,
     "",
     `Valor por peça: ${formatarBRL(d.preco / d.quantidade)}`,
     `*Total: ${formatarBRL(d.preco)}*`,
@@ -153,11 +154,16 @@ export function mensagemFollowup(nome: string | null | undefined, peca: string) 
   return `Olá${primeiroNome ? `, ${primeiroNome}` : ""}! Tudo bem? Passando para saber se você conseguiu ver o orçamento de "${peca}". Posso ajudar com alguma dúvida?`;
 }
 
-const DIA_MS = 24 * 60 * 60 * 1000;
+export const DIA_MS = 24 * 60 * 60 * 1000;
 
 /** Enviado há mais de `dias` sem resposta. */
 export function precisaFollowup(o: { status: StatusOrcamento; status_alterado_em: string }, dias: number, agora = Date.now()) {
   return o.status === "enviado" && agora - new Date(o.status_alterado_em).getTime() > dias * DIA_MS;
+}
+
+/** Texto sem acentos e em minúsculas, para busca ("impressao" encontra "Impressão"). */
+export function normalizarBusca(texto: string | null | undefined) {
+  return (texto ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 }
 
 /** Indicadores do histórico para a lista filtrada. Aprovação = (aprovados + entregues) ÷ (todos exceto enviados). */
