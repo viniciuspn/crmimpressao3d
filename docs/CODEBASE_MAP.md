@@ -1,13 +1,13 @@
 ---
-last_mapped: 2026-10-20T02:53:14Z
-total_files: 70
-total_tokens: 52000
-phase: 4
+last_mapped: 2026-10-20T03:22:03Z
+total_files: 82
+total_tokens: 78000
+phase: 5
 ---
 
 # Mapa do código
 
-> Gerado pelo Cartographer. Último mapeamento: 2026-10-20T02:53:14Z (fim da fase 4, Cadastros e configurações).
+> Gerado pelo Cartographer. Último mapeamento: 2026-10-20T03:22:03Z (fim da fase 5, Orçamento e histórico).
 
 **Ideia** (crmimpressao3d) é um sistema de orçamentos e clientes para uma oficina de impressão 3D, usado por uma só pessoa. A especificação completa está em [prompt-ideia.md](../prompt-ideia.md). A seção 9 dela registra as decisões tomadas depois da revisão.
 
@@ -46,16 +46,17 @@ next.config.ts            standalone, cabeçalhos de segurança, Tailwind via Tu
 Dockerfile                multi-stage: deps → build (ARG NEXT_PUBLIC_*) → runner, sem root, HEALTHCHECK
 supabase/
   config.toml             Supabase local (cadastro desligado, seed desligado)
-  migrations/             4 migrações: base+configuracoes, cadastros, orcamentos, dados_iniciais
+  migrations/             5 migrações: base+configuracoes, cadastros, orcamentos, dados_iniciais, orcamento_manual_e_salvar
 tests/db/
   supabase-stub.ts        PGlite + stub de auth (auth.uid, anon, authenticated, supabase_auth_admin)
   migracoes.test.ts       RLS entre 2 usuários, FKs, triggers, permissões de configuracoes
 lib/
+  orcamento.ts            schema da entrada do editor, genéricos, texto do WhatsApp, link wa.me, follow-up, indicadores
   calculo.ts              regra de preço (função pura) + precoPorKg, custoPorUnidade, arredondar2
   cadastros.ts            schemas Zod + campos de filamentos, impressoras, insumos e configurações
   form.ts                 EstadoAcao, helpers Zod que leem FormData (decimal, inteiro, checkbox…), lerFormulario
   formato.ts              formatarBRL, paraNumero (vírgula decimal, ponto de milhar)
-  database.types.ts       tipos do banco (PROVISÓRIO, escrito à mão; regenerar com npm run db:types)
+  database.types.ts       tipos gerados do banco (npm run db:types, precisa de SUPABASE_ACCESS_TOKEN)
   dominio.ts              listas de domínio (tipos de filamento, unidades, bases, status)
   env.ts                  URL e chave do Supabase (NEXT_PUBLIC_*, embutidas no build)
   supabase/client.ts      cliente para o navegador (ainda não usado)
@@ -65,9 +66,13 @@ app/
   layout.tsx              raiz: pt-BR, fonte Geist, metadata e viewport
   login/                  página, formulário (useActionState) e actions entrar/sair
   (app)/layout.tsx        casca autenticada: Nav, cabeçalho com Sair, main
+  (app)/page.tsx          carrega config/cadastros e o orçamento ?id= (reconciliando cliente/insumos com o banco)
+  (app)/editor-orcamento.tsx  editor client: cálculo ao vivo, painel de preço, texto WhatsApp, salvar
+  (app)/actions.ts        salvarOrcamento: Zod → recalcula → congela nomes → rpc salvar_orcamento
+  (app)/historico/        lista com filtros/indicadores, status otimista, follow-up, entrega, excluir
   (app)/cadastros/        abas filamentos/impressoras/insumos (?aba=), edição inline, actions salvar/excluir
   (app)/configuracoes/    parâmetros da oficina (update só nas colunas permitidas)
-  (app)/*/page.tsx        demais páginas provisórias (EmBreve) até as fases 5 e 6
+  (app)/*/page.tsx        clientes e calibração: provisórias (EmBreve) até a fase 6
   api/health/route.ts     GET → {status:"ok"}
 components/
   formulario.tsx          formulário genérico (campos descritos em lib/cadastros.ts), useActionState via onSubmit
@@ -77,6 +82,7 @@ components/
 .claude/
   agents/                 database-architect, test-engineer, security-auditor, code-reviewer
   skills/fechar-fase/     checklist de fim de fase
+scripts/sql-editor.mjs     junta migrações num SQL para colar no SQL Editor
 e2e/                      Playwright (viewport de celular) contra o Supabase real; limpeza.teardown apaga "E2E %"
 Ideia.html                protótipo: referência visual e de comportamento
 docs/CODEBASE_MAP.md      este arquivo
@@ -117,6 +123,10 @@ Todas as tabelas têm RLS com 4 políticas `(select auth.uid()) = user_id` para 
 ### Formulários e cadastros
 
 O padrão é: `lib/cadastros.ts` define o schema Zod e o `GrupoCampos[]`; a página passa a Server Action com `bind(null, id)` para `<Formulario>`; a action chama `requireUser()`, depois `lerFormulario(schema, fd)`, depois o Supabase com `.select("id")` (0 linhas = não encontrado) e por fim `revalidatePath`. Excluir: filamento e impressora tentam `delete` e, se der 23503, desativam; insumo confere o uso antes.
+
+### Orçamento e histórico
+
+O editor (client) mantém os campos como texto e monta a entrada com `entradaOrcamentoSchema`, o mesmo schema do servidor. Calcula ao vivo com `calcular`. Ao salvar, `salvarOrcamento` revalida, recalcula, congela `material`/`impressora_nome` e grava via `salvar_orcamento(p_id, p_dados, p_insumos)`, uma função SQL security invoker que faz insert ou update e substitui as linhas de insumo numa só transação. `parametros` guarda `{versao, entrada, material, impressora_nome}` e é a fonte para reabrir. Impressora manual e filamento genérico deixam `impressora_id`/`filamento_id` nulos.
 
 ### Casca da interface
 
@@ -161,6 +171,10 @@ sequenceDiagram
 - Commits pequenos em português; finais de linha LF (`.gitattributes`).
 
 ## Pegadinhas
+
+- **`salvar_orcamento` com `p_id` nulo precisa da chave no JSON** (`p_id: null`). Sem ela o PostgREST não encontra a função (PGRST202).
+- Reabrir um orçamento usa `parametros.entrada`, mas `cliente_id` e `insumo_id` são reconciliados com o banco (podem ter sido apagados).
+- `useOptimistic` no status do histórico: o valor volta ao do servidor quando a action termina.
 
 - **Formulários usam `onSubmit` + `startTransition(() => formAction(fd))`, não `action={}`**: com `action`, o React 19 limpa o formulário mesmo quando a action devolve erro.
 - **Cores só por token** (`bg-panel`, `text-muted`, `border-line`, `text-accent`, `bg-soft`, `text-danger`, `c1`–`c8`), definidos em `app/globals.css` com modo escuro. Não use `zinc`, `teal` etc.

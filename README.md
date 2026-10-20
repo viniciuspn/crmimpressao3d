@@ -25,12 +25,23 @@ Não existe tela de cadastro. Crie sua conta pelo painel do Supabase
 
 As migrações ficam em `supabase/migrations/`. Para aplicar no projeto da nuvem:
 
+Opção 1, SQL Editor (sem instalar nada):
+
+```bash
+node scripts/sql-editor.mjs 20261020020000   # só as migrações a partir desta versão
+```
+
+Cole o `aplicar-banco.sql` gerado em **SQL Editor → New query → Run**.
+
+Opção 2, CLI:
+
 ```bash
 npx supabase login
 npx supabase link --project-ref SEU_PROJECT_REF   # Project Settings → General
 npm run db:push                                    # aplica as migrações
-npm run db:types                                   # regenera lib/database.types.ts
 ```
+
+Tipos do banco: com `SUPABASE_ACCESS_TOKEN` (Account → Access Tokens) no ambiente, `npm run db:types` regenera `lib/database.types.ts`.
 
 No primeiro login, o app cria os dados iniciais: a impressora Creality K1C, os filamentos PLA e ABS e o insumo Tinta. Depois, preencha a quantidade por embalagem da Tinta em Cadastros.
 
