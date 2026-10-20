@@ -19,7 +19,7 @@ teardown("apagar registros E2E", async () => {
   const { error: eo } = await supabase.from("orcamentos").delete().like("peca", "E2E %");
   if (eo) throw eo;
 
-  for (const tabela of ["filamentos", "impressoras", "insumos"] as const) {
+  for (const tabela of ["clientes", "filamentos", "impressoras", "insumos"] as const) {
     const { error: e } = await supabase.from(tabela).delete().like("nome", "E2E %");
     if (e) throw e;
   }
