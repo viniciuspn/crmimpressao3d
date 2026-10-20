@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { startTransition, useActionState } from "react";
 import { entrar, type LoginState } from "./actions";
 
 const inputClass =
@@ -10,7 +10,15 @@ export function LoginForm() {
   const [state, action, pending] = useActionState<LoginState, FormData>(entrar, {});
 
   return (
-    <form action={action} className="space-y-4">
+    <form
+      // onSubmit em vez de action={}: com action, o React 19 limpa o e-mail quando a senha está errada.
+      onSubmit={(e) => {
+        e.preventDefault();
+        const fd = new FormData(e.currentTarget);
+        startTransition(() => action(fd));
+      }}
+      className="space-y-4"
+    >
       <label className="block">
         <span className="text-sm font-medium">E-mail</span>
         <input name="email" type="email" autoComplete="email" required className={inputClass} />

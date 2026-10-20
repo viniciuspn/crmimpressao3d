@@ -34,6 +34,7 @@ export async function entrar(_prev: LoginState, formData: FormData): Promise<Log
 
 export async function sair() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  // local: encerra só esta sessão, não as de outros aparelhos.
+  await supabase.auth.signOut({ scope: "local" });
   redirect("/login");
 }
