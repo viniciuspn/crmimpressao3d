@@ -55,7 +55,7 @@ test.describe.serial("orçamento → histórico", () => {
 
     await page.getByRole("button", { name: "Salvar orçamento" }).click();
     await expect(page.getByText("Orçamento salvo no histórico")).toBeVisible();
-    await expect(page).toHaveURL(/\?id=[0-9a-f-]{36}$/);
+    await expect(page).toHaveURL(/\?id=[0-9a-f-]{36}&salvo=1$/);
     await expect(page.getByRole("button", { name: "Atualizar orçamento" })).toBeVisible();
   });
 
