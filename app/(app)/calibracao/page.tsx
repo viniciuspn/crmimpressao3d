@@ -129,7 +129,8 @@ export default async function CalibracaoPage() {
 
         {r.desvioHoras !== null && r.comHoras >= AMOSTRA_MINIMA && Math.abs(r.desvioHoras) >= 0.05 && (
           <p className="border-t border-line pt-3 text-sm">
-            Suas impressões levam {desvio(r.desvioHoras)} do tempo do fatiador. Ao orçar, considere ajustar o &quot;Tempo por mesa&quot;
+            Suas impressões levam {formatarNumero(Math.abs(r.desvioHoras) * 100, 1)}%{" "}
+            {r.desvioHoras > 0 ? "a mais" : "a menos"} que o tempo do fatiador. Ao orçar, considere ajustar o &quot;Tempo por mesa&quot;
             nessa proporção.
           </p>
         )}

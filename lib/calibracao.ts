@@ -56,7 +56,8 @@ export function calibrar(entregas: Entrega[], taxaFalhaAtual: number, desperdici
       ? arred1(((falhas + (taxaBase / 100) * PESO_TAXA_USADA) / (mesas + PESO_TAXA_USADA)) * 100)
       : null;
 
-  // Desperdício que teria acertado as gramas: (1 + desperdício usado) × real ÷ estimado − 1, ponderado.
+  // Desperdício que teria acertado as gramas: Σ real ÷ Σ base − 1, com base = estimado ÷ (1 + desperdício usado).
+  // Tirar o desperdício de cada orçamento antes de somar mantém a razão das somas quando ele variou entre orçamentos.
   const desperdicioCalculado =
     comGramas.length >= AMOSTRA_MINIMA
       ? Math.min(
@@ -64,8 +65,8 @@ export function calibrar(entregas: Entrega[], taxaFalhaAtual: number, desperdici
           Math.max(
             0,
             arred1(
-              (soma(comGramas.map((e) => (1 + (e.desperdicioUsado ?? desperdicioAtual) / 100) * e.gramasReais!)) /
-                soma(comGramas.map((e) => e.gramasEstimadas!)) -
+              (soma(comGramas.map((e) => e.gramasReais!)) /
+                soma(comGramas.map((e) => e.gramasEstimadas! / (1 + (e.desperdicioUsado ?? desperdicioAtual) / 100))) -
                 1) *
                 100,
             ),

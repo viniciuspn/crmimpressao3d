@@ -90,6 +90,16 @@ describe("calibrar", () => {
     expect(calibrar(varias(5, { gramasReais: 50 }), 8, 5).desperdicioSugerido).toBe(0);
     expect(calibrar(varias(5, { gramasReais: 1000 }), 8, 5).desperdicioSugerido).toBe(100);
   });
+
+  it("desperdício sugerido com desperdício usado diferente entre orçamentos é a razão das somas das bases", () => {
+    // Bases de 100 g: com 0% estimou 100 g e gastou 150 g; com 100% estimou 200 g e gastou 110 g.
+    const lista = [
+      ...varias(4, { gramasEstimadas: 100, gramasReais: 150, desperdicioUsado: 0 }),
+      entrega({ gramasEstimadas: 200, gramasReais: 110, desperdicioUsado: 100 }),
+    ];
+    // (4 × 150 + 110) ÷ (4 × 100 + 100) − 1 = 42%
+    expect(calibrar(lista, 8, 5).desperdicioCalculado).toBe(42);
+  });
 });
 
 describe("resumirPorCliente", () => {
