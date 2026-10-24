@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 
-FROM node:24-alpine AS base
+# Digest fixo para o build ser reproduzível; para atualizar, troque pelo digest atual de node:24-alpine.
+FROM node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS base
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -26,9 +27,11 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0
 RUN addgroup -S -g 1001 nodejs && adduser -S -u 1001 -G nodejs nextjs
-COPY --from=build --chown=nextjs:nodejs /app/public ./public
-COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Arquivos do app ficam do root (só leitura para o processo); só o cache do Next é gravável.
+COPY --from=build /app/public ./public
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+RUN mkdir -p .next/cache && chown nextjs:nodejs .next/cache
 USER nextjs
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
