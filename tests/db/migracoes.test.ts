@@ -190,9 +190,11 @@ describe("RLS: um usuário não vê nem altera dados de outro", () => {
   });
 
   it("anon não lê nada", async () => {
-    for (const tabela of TABELAS) {
+    for (const tabela of TABELAS.filter((t) => t !== "configuracoes")) {
       expect(await como(db, null, () => contar(tabela))).toBe(0);
     }
+    // configuracoes não tem nem o grant de select para anon.
+    await expect(como(db, null, () => contar("configuracoes"))).rejects.toThrow(/permission denied/);
   });
 });
 

@@ -98,6 +98,25 @@ describe("salvar_orcamento", () => {
     });
   });
 
+  it("atualizar um enviado reinicia o prazo do follow-up; nos demais status a data fica", async () => {
+    await como(db, ANA, async () => {
+      const antigo = "2026-01-01T00:00:00+00:00";
+      const desde = async (id: string) =>
+        (await db.query<{ d: Date }>("select status_alterado_em as d from public.orcamentos where id = $1", [id])).rows[0].d;
+
+      const enviado = await salvar(null, dados(), []);
+      await db.query("update public.orcamentos set status_alterado_em = $2 where id = $1", [enviado, antigo]);
+      await salvar(enviado, dados(), []);
+      expect((await desde(enviado)).getTime()).toBeGreaterThan(new Date(antigo).getTime());
+
+      const aprovado = await salvar(null, dados(), []);
+      await db.query("update public.orcamentos set status = 'aprovado' where id = $1", [aprovado]);
+      await db.query("update public.orcamentos set status_alterado_em = $2 where id = $1", [aprovado, antigo]);
+      await salvar(aprovado, dados(), []);
+      expect((await desde(aprovado)).getTime()).toBe(new Date(antigo).getTime());
+    });
+  });
+
   it("é atômico: uma linha inválida desfaz o orçamento inteiro", async () => {
     const antes = await como(db, ANA, async () =>
       (await db.query<{ n: number }>("select count(*)::int n from public.orcamentos")).rows[0].n,
