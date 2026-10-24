@@ -8,7 +8,7 @@ import { Kpi } from "@/components/kpi";
 import { STATUS_ORCAMENTO, type StatusOrcamento } from "@/lib/dominio";
 import type { GrupoCampos } from "@/lib/form";
 import type { ItemHistorico } from "@/lib/historico";
-import { formatarBRL, formatarNumero } from "@/lib/formato";
+import { formatarBRL, formatarNumero, plural } from "@/lib/formato";
 import { DIA_MS, indicadores, linkWhatsApp, mensagemFollowup, normalizarBusca, precisaFollowup } from "@/lib/orcamento";
 import { alterarStatus, excluirOrcamento, registrarEntrega } from "./actions";
 
@@ -58,15 +58,14 @@ type Props = {
   itens: ItemHistorico[];
   clientes: { id: string; nome: string }[];
   followupDias: number;
-  clienteInicial: string;
   truncado: boolean;
   /** Na página do cliente, a lista já vem filtrada. */
   semFiltroCliente?: boolean;
 };
 
-export function ListaHistorico({ itens, clientes, followupDias, clienteInicial, truncado, semFiltroCliente }: Props) {
+export function ListaHistorico({ itens, clientes, followupDias, truncado, semFiltroCliente }: Props) {
   const [status, setStatus] = useState("");
-  const [cliente, setCliente] = useState(clienteInicial);
+  const [cliente, setCliente] = useState("");
   const [busca, setBusca] = useState("");
   const [agora] = useState(() => Date.now());
 
@@ -123,12 +122,15 @@ export function ListaHistorico({ itens, clientes, followupDias, clienteInicial, 
       </div>
 
       {truncado && (
-        <p className="text-xs text-muted">Mostrando os 500 orçamentos mais recentes; os indicadores consideram só eles.</p>
+        <p className="text-xs text-muted">
+          Mostrando os 500 orçamentos mais recentes e os enviados mais antigos; os indicadores consideram só eles.
+        </p>
       )}
 
       {pendentes.length > 0 && (
         <p className="rounded border-l-[3px] border-warn bg-soft px-3 py-2 text-sm">
-          {pendentes.length} orçamento(s) enviado(s) há mais de {followupDias} dias sem resposta. Vale cobrar o cliente.
+          {plural(pendentes.length, "orçamento enviado", "orçamentos enviados")} há mais de {plural(followupDias, "dia")} sem
+          resposta. Vale cobrar o cliente.
         </p>
       )}
 
@@ -221,7 +223,7 @@ function Linha({ o, followup, diasEnviado }: { o: ItemHistorico; followup: boole
         )}
         {followup && status === "enviado" && (
           <>
-            <span className="text-xs text-warn">Enviado há {diasEnviado} dias</span>
+            <span className="text-xs text-warn">Enviado há {plural(diasEnviado, "dia")}</span>
             <button type="button" onClick={() => mudarStatus("recusado")} className="rounded border border-line px-2.5 py-1 text-xs font-semibold text-danger">
               Marcar recusado
             </button>

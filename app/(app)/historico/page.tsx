@@ -3,8 +3,7 @@ import { carregarHistorico } from "@/lib/historico";
 import { requireUser } from "@/lib/supabase/server";
 import { ListaHistorico } from "./lista-historico";
 
-export default async function HistoricoPage({ searchParams }: PageProps<"/historico">) {
-  const { cliente } = await searchParams;
+export default async function HistoricoPage() {
   const { supabase } = await requireUser();
 
   const [historico, clientes, config] = await Promise.all([
@@ -12,6 +11,7 @@ export default async function HistoricoPage({ searchParams }: PageProps<"/histor
     supabase.from("clientes").select("id, nome").order("nome"),
     supabase.from("configuracoes").select("followup_dias").maybeSingle(),
   ]);
+  const erro = historico.erro || clientes.error || config.error;
 
   return (
     <section className="space-y-5">
@@ -21,12 +21,11 @@ export default async function HistoricoPage({ searchParams }: PageProps<"/histor
           Relatório de calibração →
         </Link>
       </div>
-      {historico.erro && <p className="text-sm text-danger">Não foi possível carregar os orçamentos.</p>}
+      {erro && <p className="text-sm text-danger">Não foi possível carregar tudo. Recarregue a página.</p>}
       <ListaHistorico
         itens={historico.itens}
         clientes={clientes.data ?? []}
         followupDias={config.data?.followup_dias ?? 7}
-        clienteInicial={typeof cliente === "string" ? cliente : ""}
         truncado={historico.truncado}
       />
     </section>

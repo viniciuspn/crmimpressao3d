@@ -33,33 +33,39 @@ export default async function OrcamentoPage({ searchParams }: PageProps<"/">) {
     supabase.from("clientes").select("id, nome").order("nome"),
     id
       ? supabase.from("orcamentos").select("id, parametros, created_at, cliente_id, clientes(nome)").eq("id", id).maybeSingle()
-      : Promise.resolve({ data: null }),
+      : Promise.resolve({ data: null, error: null }),
   ]);
 
   if (!config.data) {
     return (
       <p className="rounded-md border-l-4 border-warn bg-soft p-4 text-sm">
-        Suas configurações ainda não foram criadas. Saia e entre de novo para criá-las.
+        {config.error
+          ? "Não foi possível carregar as configurações. Recarregue a página."
+          : "Suas configurações ainda não foram criadas. Saia e entre de novo para criá-las."}
       </p>
     );
   }
+  // Sem as listas, o editor abriria com cadastros faltando e parecendo vazios.
+  const erroListas = [filamentos, impressoras, insumos, clientes].some((r) => r.error);
 
   let orcamento: OrcamentoAberto | null = null;
   let erroAbrir: string | null = idInvalido ? "Orçamento não encontrado." : null;
-  if (id) {
+  if (id && aberto.error) {
+    erroAbrir = "Não foi possível abrir o orçamento. Recarregue a página.";
+  } else if (id) {
     const o = aberto.data;
     const p = o ? parametrosSchema.safeParse(o.parametros) : null;
     if (o && p?.success) {
       // A entrada congelada pode citar cadastros que sumiram depois: vale o estado atual do banco
       // (cliente apagado → sem cliente; insumo apagado → linha mantida, sem vínculo).
+      // Se a consulta falhar, os vínculos ficam como estão, para não apagá-los ao atualizar.
       const idsInsumos = p.data.entrada.insumos.flatMap((l) => (l.insumo_id ? [l.insumo_id] : []));
-      const existentes = idsInsumos.length
-        ? new Set((await supabase.from("insumos").select("id").in("id", idsInsumos)).data?.map((i) => i.id))
-        : new Set<string>();
+      const existentes = idsInsumos.length ? await supabase.from("insumos").select("id").in("id", idsInsumos) : null;
+      const ids = existentes && !existentes.error ? new Set(existentes.data.map((i) => i.id)) : null;
       const entrada = {
         ...p.data.entrada,
         cliente_id: o.cliente_id,
-        insumos: p.data.entrada.insumos.map((l) => (l.insumo_id && !existentes.has(l.insumo_id) ? { ...l, insumo_id: null } : l)),
+        insumos: p.data.entrada.insumos.map((l) => (ids && l.insumo_id && !ids.has(l.insumo_id) ? { ...l, insumo_id: null } : l)),
       };
       orcamento = {
         id: o.id,
@@ -81,6 +87,7 @@ export default async function OrcamentoPage({ searchParams }: PageProps<"/">) {
         <p className="text-sm text-muted">Escolha a impressora e o filamento; os campos se ajustam e o preço aparece ao lado.</p>
       </div>
       {erroAbrir && <p className="rounded-md border-l-4 border-warn bg-soft p-3 text-sm">{erroAbrir}</p>}
+      {erroListas && <p className="text-sm text-danger">Não foi possível carregar tudo. Recarregue a página.</p>}
       <EditorOrcamento
         key={orcamento?.id ?? String(novo ?? "novo")}
         config={config.data as Config}

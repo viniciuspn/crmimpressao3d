@@ -77,7 +77,7 @@ export function ListaClientes({ clientes }: { clientes: ClienteLista[] }) {
                     </span>
                     <span className="block text-xs text-muted">
                       {c.resumo.orcamentos
-                        ? `${plural(c.resumo.orcamentos, "orçamento")} · ${plural(c.resumo.fechados, "fechado")} · ${formatarBRL(c.resumo.valorFechado)}`
+                        ? `${plural(c.resumo.orcamentos, "orçamento")} · ${plural(c.resumo.fechados, "fechado")}${c.resumo.fechados ? ` (${formatarBRL(c.resumo.valorFechado)})` : ""}`
                         : "Sem orçamentos"}
                     </span>
                   </span>

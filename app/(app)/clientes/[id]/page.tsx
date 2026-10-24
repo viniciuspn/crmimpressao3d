@@ -16,6 +16,9 @@ export default async function ClientePage({ params }: PageProps<"/clientes/[id]"
     carregarHistorico(supabase, id),
     supabase.from("configuracoes").select("followup_dias").maybeSingle(),
   ]);
+  if (cliente.error) {
+    return <p className="text-sm text-danger">Não foi possível carregar o cliente. Recarregue a página.</p>;
+  }
   const c = cliente.data;
   if (!c) notFound();
 
@@ -45,11 +48,13 @@ export default async function ClientePage({ params }: PageProps<"/clientes/[id]"
       </div>
 
       <h2 className="text-lg font-semibold">Orçamentos</h2>
+      {(historico.erro || config.error) && (
+        <p className="text-sm text-danger">Não foi possível carregar tudo. Recarregue a página.</p>
+      )}
       <ListaHistorico
         itens={historico.itens}
         clientes={[]}
         followupDias={config.data?.followup_dias ?? 7}
-        clienteInicial=""
         truncado={historico.truncado}
         semFiltroCliente
       />

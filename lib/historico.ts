@@ -1,5 +1,6 @@
 import "server-only";
 import type { StatusOrcamento } from "@/lib/dominio";
+import { todasAsPaginas } from "@/lib/paginar";
 import type { createClient } from "@/lib/supabase/server";
 
 export type ItemHistorico = {
@@ -28,19 +29,43 @@ export const LIMITE_HISTORICO = 500;
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
-/** Orçamentos mais recentes (opcionalmente de um cliente), no formato da lista do histórico. */
-export async function carregarHistorico(supabase: Supabase, clienteId?: string) {
-  let consulta = supabase
-    .from("orcamentos")
-    .select(
-      "id, created_at, peca, material, quantidade, pintado, preco, lucro, status, status_alterado_em, horas_reais, gramas_reais, houve_falha, observacao_entrega, detalhamento, cliente_id, clientes(nome, telefone)",
-    )
-    .order("created_at", { ascending: false })
-    .limit(LIMITE_HISTORICO);
-  if (clienteId) consulta = consulta.eq("cliente_id", clienteId);
+const COLUNAS =
+  "id, created_at, peca, material, quantidade, pintado, preco, lucro, status, status_alterado_em, horas_reais, gramas_reais, houve_falha, observacao_entrega, detalhamento, cliente_id, clientes(nome, telefone)";
 
-  const { data, error } = await consulta;
-  const itens: ItemHistorico[] = (data ?? []).map((o) => {
+/**
+ * Orçamentos mais recentes (opcionalmente de um cliente), no formato da lista do histórico.
+ * Se passar do limite, os enviados mais antigos vêm junto, no fim, para o follow-up não esquecer deles.
+ */
+export async function carregarHistorico(supabase: Supabase, clienteId?: string) {
+  const consulta = () => {
+    const q = supabase.from("orcamentos").select(COLUNAS);
+    return clienteId ? q.eq("cliente_id", clienteId) : q;
+  };
+
+  const { data, error } = await consulta()
+    .order("created_at", { ascending: false })
+    .order("id")
+    .limit(LIMITE_HISTORICO);
+  const recentes = data ?? [];
+  const truncado = recentes.length >= LIMITE_HISTORICO;
+
+  let antigos: typeof recentes = [];
+  let erroAntigos = false;
+  if (truncado) {
+    const ultimo = recentes[recentes.length - 1];
+    const r = await todasAsPaginas((de, ate) =>
+      consulta()
+        .eq("status", "enviado")
+        .lt("created_at", ultimo.created_at)
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(de, ate),
+    );
+    antigos = r.dados;
+    erroAntigos = r.erro;
+  }
+
+  const itens: ItemHistorico[] = [...recentes, ...antigos].map((o) => {
     const d = o.detalhamento as { horas?: number; gramas?: number } | null;
     return {
       id: o.id,
@@ -64,5 +89,5 @@ export async function carregarHistorico(supabase: Supabase, clienteId?: string) 
       clienteTelefone: o.clientes?.telefone ?? null,
     };
   });
-  return { itens, erro: Boolean(error), truncado: itens.length >= LIMITE_HISTORICO };
+  return { itens, erro: Boolean(error) || erroAntigos, truncado };
 }

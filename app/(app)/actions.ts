@@ -22,7 +22,8 @@ export async function salvarOrcamento(id: string | null, entrada: unknown): Prom
   let material: string;
   let filamentoId: string | null = null;
   if (e.filamento.tipo === "cadastro") {
-    const { data: f } = await supabase.from("filamentos").select("id, nome, tipo").eq("id", e.filamento.id).maybeSingle();
+    const { data: f, error } = await supabase.from("filamentos").select("id, nome, tipo").eq("id", e.filamento.id).maybeSingle();
+    if (error) return { ok: false, erro: "Não foi possível salvar. Tente de novo." };
     if (!f) return { ok: false, erro: "Filamento não encontrado" };
     material = rotuloMaterial(f);
     filamentoId = f.id;
@@ -32,7 +33,8 @@ export async function salvarOrcamento(id: string | null, entrada: unknown): Prom
 
   let impressoraNome = "Manual";
   if (e.impressora_id) {
-    const { data: imp } = await supabase.from("impressoras").select("nome").eq("id", e.impressora_id).maybeSingle();
+    const { data: imp, error } = await supabase.from("impressoras").select("nome").eq("id", e.impressora_id).maybeSingle();
+    if (error) return { ok: false, erro: "Não foi possível salvar. Tente de novo." };
     if (!imp) return { ok: false, erro: "Impressora não encontrada" };
     impressoraNome = imp.nome;
   }

@@ -46,7 +46,7 @@ test.describe.serial("clientes, calibração e exportação", () => {
     await page.waitForResponse((r) => r.request().method() === "POST");
 
     await page.goto("/clientes");
-    await expect(itemCliente(page)).toContainText(/1 fechado · R\$\s83,37/);
+    await expect(itemCliente(page)).toContainText(/1 fechado \(R\$\s83,37\)/);
   });
 
   test("exporta o backup .xlsx com uma aba por tabela", async ({ page }) => {
