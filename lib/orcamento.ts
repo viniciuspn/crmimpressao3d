@@ -26,7 +26,13 @@ export const linhaInsumoSchema = z.object({
   nome: z.string().trim().min(1).max(120),
   unidade: z.enum(UNIDADES_INSUMO),
   custo_unitario: valor(),
-  quantidade: z.number().finite().gt(0).max(1_000_000),
+  // orcamento_insumos.quantidade é numeric(12,4): mais casas seriam arredondadas pelo banco (decisão 17).
+  quantidade: z
+    .number()
+    .finite()
+    .gt(0)
+    .max(1_000_000)
+    .refine((v) => Number(v.toFixed(4)) === v, "Use no máximo 4 casas decimais"),
   base: z.enum(BASES_INSUMO),
 });
 export type LinhaInsumoOrcamento = z.infer<typeof linhaInsumoSchema>;

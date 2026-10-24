@@ -44,7 +44,9 @@ export function paraNumero(valor: unknown): number | undefined {
   return /^-?\d*\.?\d+$/.test(normalizado) ? Number(normalizado) : Number.NaN;
 }
 
-/** Valor de campo numérico para exibir num input (vírgula decimal, sem milhar). */
+const campo = new Intl.NumberFormat("pt-BR", { useGrouping: false, maximumFractionDigits: 20 });
+
+/** Valor de campo numérico para exibir num input (vírgula decimal, sem milhar e sem notação científica). */
 export function numeroParaCampo(valor: number | null | undefined) {
-  return valor == null ? "" : String(valor).replace(".", ",");
+  return valor == null ? "" : campo.format(valor);
 }

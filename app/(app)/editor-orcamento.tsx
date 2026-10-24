@@ -1,12 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useMemo, useState, useTransition, type ReactNode } from "react";
+import { useId, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { caixaClass, controleClass, unidadeClass } from "@/components/formulario";
 import { Kpi } from "@/components/kpi";
 import { arredondar2, calcular, custoPorUnidade, precoPorKg, type ComponenteCusto, type ResultadoCalculo } from "@/lib/calculo";
 import { BASES_INSUMO, type BaseInsumo, type UnidadeInsumo } from "@/lib/dominio";
-import { formatarBRL, formatarCustoUnitario, formatarNumero, numeroParaCampo, paraNumero } from "@/lib/formato";
+import { formatarBRL, formatarCustoUnitario, formatarNumero, numeroParaCampo, paraNumero, plural } from "@/lib/formato";
 import {
   entradaOrcamentoSchema,
   FILAMENTOS_GENERICOS,
@@ -87,6 +87,8 @@ type Estado = {
   pintado: boolean;
   retorno_ativo: boolean;
   linhas: LinhaInsumoOrcamento[];
+  /** Preço por kg em precisão total enquanto o campo não for editado (o campo mostra 2 casas). */
+  preco_kg_exato?: number;
 } & Record<CampoNumerico, string>;
 
 function estadoInicial({ config, filamentos, impressoras, orcamento, clientes, clienteInicial }: Props): Estado {
@@ -95,6 +97,8 @@ function estadoInicial({ config, filamentos, impressoras, orcamento, clientes, c
     const numeros = Object.fromEntries(CAMPOS_NUMERICOS.map((c) => [c, numeroParaCampo(e[c])])) as Record<CampoNumerico, string>;
     return {
       ...numeros,
+      preco_kg: numeroParaCampo(arredondar2(e.preco_kg)),
+      preco_kg_exato: e.preco_kg,
       peca: e.peca,
       clienteId: e.cliente_id ?? "",
       filamento: e.filamento.tipo === "cadastro" ? `db:${e.filamento.id}` : `gen:${e.filamento.nome}`,
@@ -121,6 +125,7 @@ function estadoInicial({ config, filamentos, impressoras, orcamento, clientes, c
     gramas_por_mesa: "",
     horas_por_mesa: "",
     preco_kg: n(f ? arredondar2(precoPorKg(f)) : FILAMENTOS_GENERICOS.PLA),
+    preco_kg_exato: f ? precoPorKg(f) : undefined,
     desperdicio_pct: n(config.desperdicio_pct),
     consumo_w: n(imp?.consumo_w ?? 120),
     preco_impressora: n(imp?.preco ?? 3000),
@@ -152,10 +157,16 @@ function montarEntrada(s: Estado): { entrada: EntradaOrcamento | null; invalidos
   const numeros: Record<string, number> = Object.fromEntries(
     CAMPOS_NUMERICOS.map((c) => [c, paraNumero(s[c]) ?? Number.NaN]),
   );
-  // Retorno desligado: os campos dele não importam para o cálculo.
+  if (s.preco_kg_exato !== undefined) numeros.preco_kg = s.preco_kg_exato;
+  // Retorno e pintura desligados: os campos deles não importam para o cálculo.
+  const inteiroValido = (v: number) => Number.isInteger(v) && v >= 1;
   if (!s.retorno_ativo) {
-    if (!(numeros.retorno_meses >= 1)) numeros.retorno_meses = 12;
-    if (!(numeros.retorno_horas_mes >= 1)) numeros.retorno_horas_mes = 160;
+    if (!inteiroValido(numeros.retorno_meses)) numeros.retorno_meses = 12;
+    if (!inteiroValido(numeros.retorno_horas_mes)) numeros.retorno_horas_mes = 160;
+  }
+  if (!s.pintado) {
+    if (!(numeros.pintura_insumos_peca >= 0)) numeros.pintura_insumos_peca = 0;
+    if (!(numeros.pintura_min_peca >= 0)) numeros.pintura_min_peca = 0;
   }
   const filamento = s.filamento.startsWith("db:")
     ? { tipo: "cadastro" as const, id: s.filamento.slice(3) }
@@ -200,6 +211,8 @@ export function EditorOrcamento(props: Props) {
     props.mensagemInicial ? { texto: props.mensagemInicial } : null,
   );
   const [tentouSalvar, setTentouSalvar] = useState(false);
+  // Id do orçamento novo já gravado: um segundo toque antes da remontagem atualiza em vez de duplicar.
+  const idSalvo = useRef<string | null>(null);
 
   const set = <K extends keyof Estado>(campo: K, valor: Estado[K]) => setS((atual) => ({ ...atual, [campo]: valor }));
 
@@ -227,6 +240,7 @@ export function EditorOrcamento(props: Props) {
       ...a,
       filamento: valor,
       preco_kg: f ? numeroParaCampo(arredondar2(precoPorKg(f))) : g ? numeroParaCampo(FILAMENTOS_GENERICOS[g]) : a.preco_kg,
+      preco_kg_exato: f ? precoPorKg(f) : g ? undefined : a.preco_kg_exato,
     }));
   }
 
@@ -256,8 +270,9 @@ export function EditorOrcamento(props: Props) {
     }
     setMensagem(null);
     iniciarSalvar(async () => {
-      const r = await salvarOrcamento(orcamento?.id ?? null, entrada);
+      const r = await salvarOrcamento(orcamento?.id ?? idSalvo.current, entrada);
       if (!r.ok) return setMensagem({ texto: r.erro, erro: true });
+      idSalvo.current = r.id;
       setMensagem({ texto: r.mensagem });
       // ?salvo=1: o editor é remontado com o id novo e mostra a mensagem de novo.
       if (!orcamento) router.replace(`/?id=${r.id}&salvo=1`);
@@ -294,7 +309,7 @@ export function EditorOrcamento(props: Props) {
     <CampoNumero
       rotulo={rotulo}
       valor={s[c]}
-      onChange={(v) => set(c, v)}
+      onChange={(v) => setS((a) => ({ ...a, [c]: v, ...(c === "preco_kg" && { preco_kg_exato: undefined }) }))}
       invalido={invalido(c)}
       {...extra}
     />
@@ -361,8 +376,8 @@ export function EditorOrcamento(props: Props) {
           </Grade>
           {r && (
             <Dica>
-              <b>{r.mesas}</b> mesa(s) · <b>{formatarNumero(r.horas)} h</b> de máquina · <b>{Math.round(r.gramas)} g</b> com desperdício
-              {sobra > 0 && ` · última mesa com ${sobra} vaga(s) livre(s)`}
+              <b>{plural(r.mesas, "mesa")}</b> · <b>{formatarNumero(r.horas)} h</b> de máquina · <b>{Math.round(r.gramas)} g</b> com desperdício
+              {sobra > 0 && ` · última mesa com ${plural(sobra, "vaga livre", "vagas livres")}`}
             </Dica>
           )}
         </Secao>
@@ -429,7 +444,7 @@ export function EditorOrcamento(props: Props) {
                   <li key={`${l.insumo_id}-${l.base}-${i}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded border border-line bg-bg px-2.5 py-2 text-sm">
                     <span className="min-w-0 flex-[1_1_160px]">{l.nome}</span>
                     <span className="font-mono whitespace-nowrap">
-                      {formatarNumero(l.quantidade, 4)} {l.unidade} {l.base === "peca" ? `× ${entrada?.quantidade ?? "?"} peça(s)` : "no pedido"}
+                      {formatarNumero(l.quantidade, 4)} {l.unidade} {l.base === "peca" ? (entrada ? `× ${plural(entrada.quantidade, "peça")}` : "por peça") : "no pedido"}
                     </span>
                     <span className="font-mono whitespace-nowrap">{formatarBRL(total)}</span>
                     <button
@@ -507,7 +522,11 @@ export function EditorOrcamento(props: Props) {
             {r ? formatarBRL(r.preco) : "—"}
           </div>
           <div className="font-mono text-sm opacity-90">
-            {r && entrada ? `${formatarBRL(r.preco_por_peca)} por peça · ${entrada.quantidade} peça(s)` : "Preencha filamento e tempo por mesa"}
+            {r && entrada
+              ? `${formatarBRL(r.preco_por_peca)} por peça · ${plural(entrada.quantidade, "peça")}`
+              : CAMPOS_NUMERICOS.some(invalido)
+                ? "Corrija os campos destacados"
+                : "Preencha filamento e tempo por mesa"}
           </div>
         </div>
 
@@ -727,7 +746,9 @@ function AdicionarInsumo({ insumos, onAdicionar }: { insumos: InsumoOpcao[]; onA
   const [quantidade, setQuantidade] = useState("1");
   const [base, setBase] = useState<BaseInsumo>("peca");
   const insumo = insumos.find((i) => i.id === insumoId);
-  const qtd = paraNumero(quantidade);
+  const lida = paraNumero(quantidade);
+  // Até 4 casas, como a coluna do banco.
+  const qtd = lida !== undefined && lida > 0 && Number(lida.toFixed(4)) === lida ? lida : undefined;
 
   return (
     <div className="grid grid-cols-2 items-end gap-2.5 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto]">

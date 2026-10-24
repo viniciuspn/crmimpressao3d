@@ -159,6 +159,7 @@ describe("entradaOrcamentoSchema", () => {
     ["filamento genérico desconhecido", { filamento: { tipo: "generico", nome: "Ouro" } }],
     ["peça vazia", { peca: "  " }],
     ["linha de insumo com quantidade 0", { insumos: [{ insumo_id: null, nome: "x", unidade: "un", custo_unitario: 1, quantidade: 0, base: "peca" }] }],
+    ["linha de insumo com mais de 4 casas", { insumos: [{ insumo_id: null, nome: "x", unidade: "un", custo_unitario: 1, quantidade: 0.00004, base: "peca" }] }],
   ])("recusa %s", (_, extra) => {
     expect(entradaOrcamentoSchema.safeParse({ ...base, ...extra }).success).toBe(false);
   });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { configuracoesSchema, filamentoSchema, insumoSchema } from "./cadastros";
 import { lerFormulario } from "./form";
-import { paraNumero } from "./formato";
+import { numeroParaCampo, paraNumero } from "./formato";
 
 function fd(campos: Record<string, string>) {
   const f = new FormData();
@@ -31,6 +31,18 @@ describe("paraNumero", () => {
     expect(paraNumero("  ")).toBeUndefined();
     expect(paraNumero("abc")).toBeNaN();
     expect(paraNumero("1,2,3")).toBeNaN();
+  });
+});
+
+describe("numeroParaCampo", () => {
+  it.each([
+    [1e-7, "0,0000001"],
+    [3000, "3000"],
+    [1234567.5, "1234567,5"],
+    [null, ""],
+  ])("%s → %s, e volta igual", (valor, texto) => {
+    expect(numeroParaCampo(valor)).toBe(texto);
+    if (valor !== null) expect(paraNumero(texto)).toBe(valor);
   });
 });
 
