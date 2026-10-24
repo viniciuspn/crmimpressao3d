@@ -7,7 +7,7 @@ phase: 6
 
 # Mapa do código
 
-> Gerado pelo Cartographer. Último mapeamento: 2026-10-20T03:39:09Z (fim da fase 6, Clientes, calibração e exportação).
+> Gerado pelo Cartographer. Último mapeamento: 2026-10-20T03:39:09Z (fase 7, correções das revisões de segurança e de código).
 
 **Ideia** (crmimpressao3d) é um sistema de orçamentos e clientes para uma oficina de impressão 3D, usado por uma só pessoa. A especificação completa está em [prompt-ideia.md](../prompt-ideia.md). A seção 9 dela registra as decisões tomadas depois da revisão.
 
@@ -35,25 +35,26 @@ graph TB
     Layout -- getClaims --> Auth
     Actions -- signIn/signOut --> Auth
     Actions -- rpc criar_dados_iniciais --> DB
-    Layout -. fases 4+ .-> DB
+    Layout -- páginas leem com RLS --> DB
+    Actions -- gravam com RLS, rpc salvar_orcamento --> DB
 ```
 
 ## Estrutura de pastas
 
 ```
 proxy.ts                  sessão e redirecionamento (substitui o middleware.ts no Next 16)
-next.config.ts            standalone, cabeçalhos de segurança, Tailwind via Turbopack
-Dockerfile                multi-stage: deps → build (ARG NEXT_PUBLIC_*) → runner, sem root, HEALTHCHECK
+next.config.ts            standalone, cabeçalhos de segurança (com CSP sem nonce), Tailwind via Turbopack
+Dockerfile                multi-stage com node:24-alpine fixado por digest: deps → build (ARG NEXT_PUBLIC_*) → runner, sem root, app só leitura, HEALTHCHECK
 supabase/
   config.toml             Supabase local (cadastro desligado, seed desligado)
-  migrations/             5 migrações: base+configuracoes, cadastros, orcamentos, dados_iniciais, orcamento_manual_e_salvar
+  migrations/             6 migrações: base+configuracoes, cadastros, orcamentos, dados_iniciais, orcamento_manual_e_salvar, followup_e_privilegios
 tests/db/
   supabase-stub.ts        PGlite + stub de auth (auth.uid, anon, authenticated, supabase_auth_admin)
   migracoes.test.ts       RLS entre 2 usuários, FKs, triggers, permissões de configuracoes
 lib/
   calibracao.ts           calibrar(): desvios, falha real por mesa, sugestões de taxa de falha e desperdício
   clientes.ts             resumirPorCliente()
-  historico.ts            carregarHistorico() (server-only) usado em /historico e /clientes/[id]
+  historico.ts            carregarHistorico() (server-only): 500 mais recentes + enviados mais antigos (follow-up), usado em /historico e /clientes/[id]
   exportar.ts             gerarPlanilha() com exceljs
   paginar.ts              todasAsPaginas(): contorna o limite de 1000 linhas do PostgREST
   orcamento.ts            schema da entrada do editor, genéricos, texto do WhatsApp, link wa.me, follow-up, indicadores
@@ -64,11 +65,10 @@ lib/
   database.types.ts       tipos gerados do banco (npm run db:types, precisa de SUPABASE_ACCESS_TOKEN)
   dominio.ts              listas de domínio (tipos de filamento, unidades, bases, status)
   env.ts                  URL e chave do Supabase (NEXT_PUBLIC_*, embutidas no build)
-  supabase/client.ts      cliente para o navegador (ainda não usado)
   supabase/server.ts      cliente para o servidor + requireUser()
   supabase/proxy.ts       updateSession(): renova o token e controla rotas públicas e privadas
 app/
-  layout.tsx              raiz: pt-BR, fonte Geist, metadata e viewport
+  layout.tsx              raiz: pt-BR, fontes Archivo e IBM Plex Mono, metadata e viewport
   login/                  página, formulário (useActionState) e actions entrar/sair
   (app)/layout.tsx        casca autenticada: Nav, cabeçalho com Sair, main
   (app)/page.tsx          carrega config/cadastros e o orçamento ?id= (reconciliando cliente/insumos com o banco)
@@ -85,7 +85,6 @@ components/
   formulario.tsx          formulário genérico (campos descritos em lib/cadastros.ts), useActionState via onSubmit
   botao-excluir.tsx       excluir em dois toques
   nav.tsx                 barra lateral (md+) e barra inferior (celular), 5 itens
-  em-breve.tsx            aviso "Em construção (fase N)"
 .claude/
   agents/                 database-architect, test-engineer, security-auditor, code-reviewer
   skills/fechar-fase/     checklist de fim de fase
@@ -105,7 +104,6 @@ docs/CODEBASE_MAP.md      este arquivo
 |---|---|
 | `lib/supabase/proxy.ts` | `updateSession(request)`: chama `getClaims()`, que renova o token. Rotas públicas: `/login` e `/api/health`. Sem sessão, redireciona para `/login`; com sessão em `/login`, redireciona para `/`. |
 | `lib/supabase/server.ts` | `createClient()` lê os cookies via `next/headers`. `requireUser()` retorna `{ supabase, userId, email }` ou redireciona. |
-| `lib/supabase/client.ts` | `createClient()` para o navegador. |
 | `app/login/actions.ts` | `entrar` valida com Zod, chama `signInWithPassword` e mostra uma mensagem de erro genérica. `sair` chama `signOut`. |
 
 ### Banco de dados
@@ -197,7 +195,8 @@ sequenceDiagram
 - Não coloque código entre `createServerClient` e `getClaims` em `lib/supabase/proxy.ts`: é ali que o token é renovado.
 - O redirecionamento para `/login` descarta o caminho original (não há parâmetro `next`).
 - O `/api/health` não testa o Supabase: o container pode aparecer saudável com o banco fora do ar.
-- `/calibracao` existe mas não tem item no menu. Vai ganhar um link no Histórico na fase 6.
+- `/calibracao` não tem item no menu: chega-se a ela pelo link no Histórico e em Configurações.
+- O navegador nunca fala com o Supabase (não há cliente de navegador): tudo passa por Server Actions e páginas do servidor. Por isso a CSP fica toda em `'self'`; se um dia houver cliente no navegador, inclua o domínio do Supabase em `connect-src`.
 - **Não importe tipos de domínio de `lib/database.types.ts`**: ele será sobrescrito pelo `supabase gen types`, que gera `string` para colunas text+CHECK. Use `lib/dominio.ts`.
 - **`configuracoes` não aceita insert nem delete do app**, e só aceita update nas colunas de parâmetros. Para adicionar um parâmetro novo, inclua a coluna no `grant update (...)` da migração.
 - **FKs compostas** exigem que o `user_id` da linha seja igual ao da linha referenciada. Inserts do app não passam `user_id` (o default é `auth.uid()`).
